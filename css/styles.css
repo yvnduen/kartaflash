@@ -1,0 +1,208 @@
+/* ==========================================================================
+   KartaFlash Custom Styles & 3D Flashcard Animations
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* View Entrance Animation */
+.view-panel {
+  animation: fadeSlideUp 0.22s ease-out;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal Entrance */
+.modal-box {
+  animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 3D Flashcard Flip */
+.flip-perspective {
+  perspective: 1400px;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.flip-card-inner.no-transition {
+  transition: none !important;
+}
+
+.flip-card-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-card-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateY(0deg);
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Card change slide animation */
+.card-slide-next {
+  animation: slideFromRight 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-slide-prev {
+  animation: slideFromLeft 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes slideFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Arabic / RTL Typography */
+.arabic-text {
+  font-family: 'Amiri', 'Noto Sans Arabic', serif;
+  line-height: 1.95;
+  letter-spacing: 0;
+  unicode-bidi: plaintext;
+}
+
+.arabic-inline {
+  font-family: 'Noto Sans Arabic', 'Amiri', sans-serif;
+  line-height: 1.8;
+  unicode-bidi: plaintext;
+}
+
+/* Keyboard Shortcut Badge */
+.kbd-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 0.15rem 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  background-color: rgb(241 245 249);
+  color: rgb(51 65 85);
+  border: 1px solid rgb(203 213 225);
+  box-shadow: 0 1px 0 rgb(203 213 225);
+}
+
+html.dark .kbd-badge {
+  background-color: rgb(30 41 59);
+  color: rgb(226 232 240);
+  border-color: rgb(51 65 85);
+  box-shadow: 0 1px 0 rgb(15 23 42);
+}
+
+/* Toast Notification Animation */
+.toast-item {
+  animation: toastEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Color Swatch Selected State */
+.color-swatch.is-selected {
+  outline: 2px solid rgb(99 102 241);
+  outline-offset: 2px;
+  transform: scale(1.1);
+}
+
+html.dark .color-swatch.is-selected {
+  outline-color: rgb(165 180 252);
+}
+
+/* Subtle Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.55);
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .flip-card-inner,
+  .view-panel,
+  .modal-box,
+  .card-slide-next,
+  .card-slide-prev,
+  .toast-item {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
