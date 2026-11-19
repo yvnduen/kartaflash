@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KartaFlash — Interactive Quiz &amp; Flashcard App</title>
-  <meta name="description" content="Aplikasi web flashcard 3D dan kuis interaktif modern untuk belajar mandiri dengan penyimpanan lokal browser." />
+  <title>KartaFlash — Kartu Belajar &amp; Latihan Mandiri</title>
+  <meta name="description" content="Aplikasi kartu belajar 3D dan kuis interaktif bernuansa kertas editorial untuk menghafal kosakata Arab, istilah teknis, dan catatan belajar secara offline di peramban." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231E4D40'/%3E%3Crect x='7' y='9' width='18' height='14' rx='2.5' fill='%23FCF9F2'/%3E%3Cpath d='M10 14h12M10 18h8' stroke='%231E4D40' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E" />
 
   <!-- Prevent theme flicker on initial load -->
   <script>
@@ -19,214 +20,205 @@
     })();
   </script>
 
-  <!-- Google Fonts: Plus Jakarta Sans + Arabic (Noto Sans Arabic & Amiri) -->
+  <!-- Google Fonts: Newsreader (Editorial Serif) + Plus Jakarta Sans + Arabic (Amiri & Noto Sans Arabic) + IBM Plex Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-            arabic: ['"Noto Sans Arabic"', '"Amiri"', 'serif'],
-            amiri: ['"Amiri"', '"Noto Sans Arabic"', 'serif'],
-          },
-          boxShadow: {
-            card: '0 10px 30px -10px rgba(15, 23, 42, 0.12)',
-            'card-dark': '0 14px 35px -10px rgba(0, 0, 0, 0.5)',
-          }
-        }
-      }
-    };
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased selection:bg-indigo-500/20 selection:text-indigo-700 dark:selection:text-indigo-300 transition-colors duration-200">
+<body>
 
-  <!-- Top Navigation Header -->
-  <header class="sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3 min-w-0">
-        <button id="btn-home" type="button" class="group flex items-center gap-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-xl p-1 -ml-1">
-          <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  <!-- Top Navigation Header (automatically tucked away during active Focus Mode) -->
+  <header id="app-header" class="site-header">
+    <div class="container header-inner">
+      <div class="header-left">
+        <button id="btn-home" type="button" class="brand-button">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="6" width="14" height="14" rx="2.5"></rect>
+              <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h9A1.5 1.5 0 0 1 20 4.5v11a1.5 1.5 0 0 1-1.5 1.5H18"></path>
+              <path d="M8 11h6M8 14.5h4"></path>
             </svg>
           </span>
-          <span class="min-w-0">
-            <span class="block text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">KartaFlash</span>
-            <span class="hidden sm:block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Flashcard 3D &amp; Kuis Interaktif</span>
+          <span class="brand-copy">
+            <span class="brand-title">KartaFlash</span>
+            <span class="brand-sub">Kartu Belajar &amp; Latihan Mandiri</span>
           </span>
         </button>
 
-        <div id="header-breadcrumb" class="hidden items-center gap-2 text-sm text-slate-500 dark:text-slate-400 min-w-0">
-          <span aria-hidden="true" class="text-slate-300 dark:text-slate-700">/</span>
-          <span id="header-breadcrumb-text" class="truncate font-semibold text-slate-700 dark:text-slate-200 max-w-[160px] sm:max-w-xs"></span>
+        <div id="header-breadcrumb" class="header-breadcrumb is-hidden">
+          <span aria-hidden="true" class="breadcrumb-sep">/</span>
+          <span id="header-breadcrumb-text" class="breadcrumb-text"></span>
         </div>
       </div>
 
-      <nav aria-label="Utilitas aplikasi" class="flex items-center gap-2">
-        <button id="btn-shortcuts" type="button" title="Pintasan Keyboard (?)" aria-label="Pintasan Keyboard" class="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <nav aria-label="Utilitas aplikasi" class="header-nav">
+        <button id="btn-data-modal" type="button" class="btn btn-ghost btn-sm" title="Import, Export &amp; Reset Data">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span class="hide-xs">Data &amp; Backup</span>
+        </button>
+
+        <button id="btn-shortcuts" type="button" title="Pintasan Keyboard (?)" aria-label="Pintasan Keyboard" class="btn btn-icon btn-ghost">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
         </button>
 
-        <button id="btn-theme-toggle" type="button" title="Ubah Mode Terang/Gelap" aria-label="Ubah Mode Terang atau Gelap" class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-          <!-- Sun icon (shown in dark mode) -->
-          <svg id="icon-sun" class="w-4 h-4 hidden dark:block text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        <button id="btn-theme-toggle" type="button" title="Ubah Mode Terang atau Gelap" aria-label="Ubah Mode Terang atau Gelap" class="btn btn-secondary btn-sm">
+          <svg id="icon-sun" class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
           </svg>
-          <!-- Moon icon (shown in light mode) -->
-          <svg id="icon-moon" class="w-4 h-4 block dark:hidden text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          <svg id="icon-moon" class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
           </svg>
-          <span id="theme-label" class="hidden sm:inline">Mode Gelap</span>
+          <span id="theme-label" class="hide-xs">Mode Gelap</span>
         </button>
       </nav>
     </div>
   </header>
 
   <!-- Main Workspace -->
-  <main id="app-main" class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <main id="app-main" class="app-main container">
 
     <!-- VIEW 1: DASHBOARD DECK -->
-    <section id="view-dashboard" aria-labelledby="dashboard-heading" class="view-panel space-y-6">
-      <!-- Hero & Action Bar -->
-      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-        <div>
-          <h1 id="dashboard-heading" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Dashboard Deck Belajar
-          </h1>
-          <p class="mt-1 text-sm sm:text-base text-slate-600 dark:text-slate-400">
-            Pilih deck untuk belajar dengan Flashcard 3D atau uji kemampuan lewat Kuis Pilihan Ganda.
+    <section id="view-dashboard" aria-labelledby="dashboard-heading" class="view-panel">
+      <div class="dashboard-hero">
+        <div class="dashboard-hero-copy">
+          <p class="eyebrow-label">Meja Belajar Pribadi</p>
+          <h1 id="dashboard-heading" class="page-title">Koleksi Deck Belajar</h1>
+          <p class="page-subtitle">
+            Ulas kembali materi lewat kartu bolak-balik atau uji ingatan dengan latihan pilihan ganda.
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2.5">
-          <button id="btn-import-deck" type="button" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold shadow-sm transition-all">
-            <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            Import JSON
-          </button>
-
-          <button id="btn-export-all" type="button" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold shadow-sm transition-all">
-            <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Export Semua
-          </button>
-
-          <button id="btn-new-deck" type="button" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white text-sm font-semibold shadow-md shadow-indigo-500/25 transition-all">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        <div class="dashboard-hero-actions">
+          <button id="btn-new-deck" type="button" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
             Buat Deck Baru
           </button>
         </div>
       </div>
 
-      <!-- Summary Stats Strip -->
-      <div id="dashboard-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"></div>
+      <!-- Calm Editorial Summary Strip -->
+      <div id="dashboard-stats" class="editorial-summary-bar" aria-live="polite"></div>
 
-      <!-- Search Bar -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="relative flex-1 max-w-md">
-          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      <!-- Continue Studying Strip (when user has a recent session) -->
+      <div id="dashboard-continue" class="continue-strip is-hidden"></div>
+
+      <!-- Search & Sort Toolbar -->
+      <div class="toolbar-row">
+        <div class="search-field">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input id="input-search-decks" type="search" placeholder="Cari deck berdasarkan judul atau deskripsi..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow" />
+          <input id="input-search-decks" type="search" placeholder="Cari judul atau topik deck..." class="input-search" />
         </div>
-        <p id="deck-count-label" class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400"></p>
+
+        <div class="toolbar-meta">
+          <p id="deck-count-label" class="toolbar-count"></p>
+          <div class="sort-wrap">
+            <label for="select-sort-decks" class="sr-only">Urutkan deck</label>
+            <select id="select-sort-decks" class="select-input">
+              <option value="recent">Urutan Bawaan</option>
+              <option value="title">Judul (A–Z)</option>
+              <option value="progress-asc">Perlu Diulang</option>
+              <option value="cards-desc">Kartu Terbanyak</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- Deck Grid -->
-      <div id="deck-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      <div id="deck-grid" class="deck-grid"></div>
     </section>
 
     <!-- VIEW 2: MANAGE CARDS (CRUD) -->
-    <section id="view-manage" aria-labelledby="manage-heading" class="view-panel hidden space-y-6">
+    <section id="view-manage" aria-labelledby="manage-heading" class="view-panel is-hidden">
       <div id="manage-container"></div>
     </section>
 
     <!-- VIEW 3: FLASHCARD STUDY MODE -->
-    <section id="view-flashcard" aria-labelledby="flashcard-heading" class="view-panel hidden space-y-6">
+    <section id="view-flashcard" aria-labelledby="flashcard-heading" class="view-panel is-hidden">
       <div id="flashcard-container"></div>
     </section>
 
     <!-- VIEW 4: INTERACTIVE QUIZ MODE -->
-    <section id="view-quiz" aria-labelledby="quiz-heading" class="view-panel hidden space-y-6">
+    <section id="view-quiz" aria-labelledby="quiz-heading" class="view-panel is-hidden">
       <div id="quiz-container"></div>
     </section>
 
   </main>
 
-  <!-- Footer -->
-  <footer class="border-t border-slate-200/80 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/50 py-4 mt-auto">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
-      <p>Semua deck &amp; progres belajar tersimpan otomatis di <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[11px]">localStorage</code> browser Anda.</p>
-      <button id="btn-reset-samples" type="button" class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors">
-        Muat Ulang Deck Contoh Bawaan
-      </button>
+  <!-- Quiet Editorial Footer (hidden in Focus Mode) -->
+  <footer id="app-footer" class="site-footer">
+    <div class="container footer-inner">
+      <p>Catatan dan progres belajarmu tersimpan otomatis di peramban ini — tanpa perlu login dan tetap jalan offline.</p>
+      <span class="footer-note">KartaFlash · Edisi Kertas Kerja</span>
     </div>
   </footer>
 
   <!-- Hidden File Input for JSON Import -->
-  <input id="input-import-json" type="file" accept=".json,application/json" class="hidden" />
+  <input id="input-import-json" type="file" accept=".json,application/json" class="is-hidden" />
 
   <!-- MODAL: CREATE / EDIT DECK -->
-  <div id="modal-deck" role="dialog" aria-modal="true" aria-labelledby="modal-deck-title" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-    <div class="modal-box w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-        <h2 id="modal-deck-title" class="text-lg font-bold text-slate-900 dark:text-white">Buat Deck Baru</h2>
-        <button type="button" data-close-modal="modal-deck" aria-label="Tutup modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+  <div id="modal-deck" role="dialog" aria-modal="true" aria-labelledby="modal-deck-title" class="modal-backdrop is-hidden">
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <h2 id="modal-deck-title" class="modal-title">Buat Deck Baru</h2>
+        <button type="button" data-close-modal="modal-deck" aria-label="Tutup modal" class="btn btn-icon btn-ghost">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
 
-      <form id="form-deck" class="p-5 space-y-4">
+      <form id="form-deck" class="modal-body form-stack">
         <input type="hidden" id="deck-edit-id" value="" />
-        <div>
-          <label for="deck-title-input" class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
-            Judul Deck <span class="text-rose-500">*</span>
+        <div class="field-group">
+          <label for="deck-title-input" class="field-label">
+            Judul Deck <span class="required-mark">*</span>
           </label>
-          <input id="deck-title-input" type="text" required maxlength="80" placeholder="Contoh: Mufrodat Bahasa Arab" dir="auto" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-800" />
+          <input id="deck-title-input" type="text" required maxlength="80" placeholder="Contoh: Mufrodat Bahasa Arab" dir="auto" class="text-input" />
         </div>
 
-        <div>
-          <label for="deck-desc-input" class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
-            Deskripsi Singkat
+        <div class="field-group">
+          <label for="deck-desc-input" class="field-label">
+            Catatan Singkat
           </label>
-          <textarea id="deck-desc-input" rows="2" maxlength="200" placeholder="Contoh: Kosakata sehari-hari bahasa Arab beserta artinya" dir="auto" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-800 resize-none"></textarea>
+          <textarea id="deck-desc-input" rows="2" maxlength="200" placeholder="Contoh: Kosakata sehari-hari bahasa Arab beserta artinya" dir="auto" class="text-input textarea-fixed"></textarea>
         </div>
 
-        <div>
-          <span class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Warna Aksen Deck</span>
-          <div id="deck-color-picker" class="flex flex-wrap gap-2.5">
-            <button type="button" data-color="indigo" aria-label="Warna Indigo" class="color-swatch w-8 h-8 rounded-full bg-indigo-500 ring-offset-2 dark:ring-offset-slate-900 transition-transform hover:scale-110"></button>
-            <button type="button" data-color="emerald" aria-label="Warna Hijau Emerald" class="color-swatch w-8 h-8 rounded-full bg-emerald-500 ring-offset-2 dark:ring-offset-slate-900 transition-transform hover:scale-110"></button>
-            <button type="button" data-color="sky" aria-label="Warna Biru Langit" class="color-swatch w-8 h-8 rounded-full bg-sky-500 ring-offset-2 dark:ring-offset-slate-900 transition-transform hover:scale-110"></button>
-            <button type="button" data-color="amber" aria-label="Warna Kuning Amber" class="color-swatch w-8 h-8 rounded-full bg-amber-500 ring-offset-2 dark:ring-offset-slate-900 transition-transform hover:scale-110"></button>
-            <button type="button" data-color="rose" aria-label="Warna Merah Rose" class="color-swatch w-8 h-8 rounded-full bg-rose-500 ring-offset-2 dark:ring-offset-slate-900 transition-transform hover:scale-110"></button>
-            <button type="button" data-color="violet" aria-label="Warna Ungu Violet" class="color-swatch w-8 h-8 rounded-full bg-violet-500 ring-offset-2 dark:ring-offset-slate-900 transition-transform hover:scale-110"></button>
+        <div class="field-group">
+          <span class="field-label">Label Penanda Buku</span>
+          <div id="deck-color-picker" class="swatch-row">
+            <button type="button" data-color="emerald" aria-label="Hijau Zamrud" title="Hijau Zamrud" class="color-swatch swatch-emerald"></button>
+            <button type="button" data-color="indigo" aria-label="Biru Tinta" title="Biru Tinta" class="color-swatch swatch-indigo"></button>
+            <button type="button" data-color="sky" aria-label="Biru Arsip" title="Biru Arsip" class="color-swatch swatch-sky"></button>
+            <button type="button" data-color="amber" aria-label="Kuning Okra" title="Kuning Okra" class="color-swatch swatch-amber"></button>
+            <button type="button" data-color="rose" aria-label="Terakota" title="Terakota" class="color-swatch swatch-rose"></button>
+            <button type="button" data-color="violet" aria-label="Ungu Anggur" title="Ungu Anggur" class="color-swatch swatch-violet"></button>
           </div>
-          <input type="hidden" id="deck-color-input" value="indigo" />
+          <input type="hidden" id="deck-color-input" value="emerald" />
         </div>
 
-        <div class="flex items-center justify-end gap-2.5 pt-2">
-          <button type="button" data-close-modal="modal-deck" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+        <div class="modal-footer">
+          <button type="button" data-close-modal="modal-deck" class="btn btn-secondary">
             Batal
           </button>
-          <button type="submit" id="btn-save-deck" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm shadow-indigo-500/25 transition-colors">
+          <button type="submit" id="btn-save-deck" class="btn btn-primary">
             Simpan Deck
           </button>
         </div>
@@ -235,49 +227,50 @@
   </div>
 
   <!-- MODAL: EDIT CARD -->
-  <div id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-card-title" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-    <div class="modal-box w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-        <h2 id="modal-card-title" class="text-lg font-bold text-slate-900 dark:text-white">Edit Kartu</h2>
-        <button type="button" data-close-modal="modal-card" aria-label="Tutup modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+  <div id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-card-title" class="modal-backdrop is-hidden">
+    <div class="modal-box modal-md">
+      <div class="modal-header">
+        <h2 id="modal-card-title" class="modal-title">Edit Kartu</h2>
+        <button type="button" data-close-modal="modal-card" aria-label="Tutup modal" class="btn btn-icon btn-ghost">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
 
-      <form id="form-edit-card" class="p-5 space-y-4">
+      <form id="form-edit-card" class="modal-body form-stack">
         <input type="hidden" id="edit-card-id" value="" />
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label for="edit-card-front" class="text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Sisi Depan (Pertanyaan / Istilah) <span class="text-rose-500">*</span>
+        <div class="field-group">
+          <div class="field-label-row">
+            <label for="edit-card-front" class="field-label">
+              Sisi Depan (Pertanyaan / Istilah) <span class="required-mark">*</span>
             </label>
-            <span class="text-[11px] text-slate-400">Mendukung Arab (RTL) &amp; Latin</span>
+            <span class="field-hint">Mendukung Arab (RTL) &amp; Latin</span>
           </div>
-          <textarea id="edit-card-front" rows="3" required dir="auto" placeholder="Masukkan istilah atau pertanyaan..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-800"></textarea>
+          <textarea id="edit-card-front" rows="3" required dir="auto" placeholder="Masukkan istilah atau pertanyaan..." class="text-input"></textarea>
         </div>
 
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label for="edit-card-back" class="text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Sisi Belakang (Jawaban / Arti) <span class="text-rose-500">*</span>
+        <div class="field-group">
+          <div class="field-label-row">
+            <label for="edit-card-back" class="field-label">
+              Sisi Belakang (Jawaban / Arti) <span class="required-mark">*</span>
             </label>
-            <span class="text-[11px] text-slate-400">Mendukung Arab (RTL) &amp; Latin</span>
+            <span class="field-hint">Mendukung Arab (RTL) &amp; Latin</span>
           </div>
-          <textarea id="edit-card-back" rows="3" required dir="auto" placeholder="Masukkan arti atau jawaban..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-800"></textarea>
+          <textarea id="edit-card-back" rows="3" required dir="auto" placeholder="Masukkan arti atau jawaban..." class="text-input"></textarea>
         </div>
 
-        <label class="inline-flex items-center gap-2.5 cursor-pointer select-none">
-          <input id="edit-card-mastered" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-          <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Tandai sebagai Sudah Hafal (Mastered)</span>
+        <label class="checkbox-row">
+          <input id="edit-card-mastered" type="checkbox" class="checkbox-input" />
+          <span>Tandai sebagai Sudah Hafal</span>
         </label>
 
-        <div class="flex items-center justify-end gap-2.5 pt-2">
-          <button type="button" data-close-modal="modal-card" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+        <div class="modal-footer">
+          <button type="button" data-close-modal="modal-card" class="btn btn-secondary">
             Batal
           </button>
-          <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm shadow-indigo-500/25 transition-colors">
+          <button type="submit" class="btn btn-primary">
             Simpan Perubahan
           </button>
         </div>
@@ -285,59 +278,126 @@
     </div>
   </div>
 
-  <!-- MODAL: CONFIRMATION -->
-  <div id="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-    <div class="modal-box w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-5 space-y-4">
-      <div class="flex items-start gap-3">
-        <div id="modal-confirm-icon" class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  <!-- MODAL: DATA & BACKUP -->
+  <div id="modal-data" role="dialog" aria-modal="true" aria-labelledby="modal-data-title" class="modal-backdrop is-hidden">
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <h2 id="modal-data-title" class="modal-title">Data &amp; Cadangan Deck</h2>
+        <button type="button" data-close-modal="modal-data" aria-label="Tutup modal" class="btn btn-icon btn-ghost">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
-        </div>
-        <div>
-          <h2 id="modal-confirm-title" class="text-base font-bold text-slate-900 dark:text-white">Konfirmasi</h2>
-          <p id="modal-confirm-message" class="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed"></p>
-        </div>
+        </button>
       </div>
 
-      <div class="flex items-center justify-end gap-2.5">
-        <button id="btn-confirm-cancel" type="button" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          Batal
+      <div class="modal-body data-modal-list">
+        <button id="btn-import-deck" type="button" class="data-action-card">
+          <span class="data-action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </span>
+          <span class="data-action-text">
+            <strong>Import Deck dari JSON</strong>
+            <span>Tambahkan koleksi deck dari file cadangan JSON ke meja belajarmu.</span>
+          </span>
         </button>
-        <button id="btn-confirm-ok" type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-sm transition-colors">
-          Ya, Lanjutkan
+
+        <button id="btn-export-all" type="button" class="data-action-card">
+          <span class="data-action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </span>
+          <span class="data-action-text">
+            <strong>Export Semua Deck (.json)</strong>
+            <span>Unduh salinan lengkap seluruh deck beserta status hafalanmu.</span>
+          </span>
+        </button>
+
+        <div class="data-divider"></div>
+
+        <button id="btn-reset-samples" type="button" class="data-action-card data-action-danger">
+          <span class="data-action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+          </span>
+          <span class="data-action-text">
+            <strong>Muat Ulang Deck Contoh Bawaan</strong>
+            <span>Mengganti daftar deck saat ini dengan 3 deck contoh bawaan.</span>
+          </span>
         </button>
       </div>
     </div>
   </div>
 
+  <!-- MODAL: CONFIRMATION -->
+  <div id="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title" class="modal-backdrop is-hidden">
+    <div class="modal-box modal-xs">
+      <div class="modal-body confirm-body">
+        <div class="confirm-row">
+          <div id="modal-confirm-icon" class="confirm-icon confirm-icon-danger">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </div>
+          <div>
+            <h2 id="modal-confirm-title" class="confirm-title">Konfirmasi</h2>
+            <p id="modal-confirm-message" class="confirm-message"></p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btn-confirm-cancel" type="button" class="btn btn-secondary">
+            Batal
+          </button>
+          <button id="btn-confirm-ok" type="button" class="btn btn-danger">
+            Ya, Lanjutkan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: KEYBOARD SHORTCUTS -->
-  <div id="modal-shortcuts" role="dialog" aria-modal="true" aria-labelledby="modal-shortcuts-title" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-    <div class="modal-box w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-        <h2 id="modal-shortcuts-title" class="text-base font-bold text-slate-900 dark:text-white">Pintasan Keyboard</h2>
-        <button type="button" data-close-modal="modal-shortcuts" aria-label="Tutup modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+  <div id="modal-shortcuts" role="dialog" aria-modal="true" aria-labelledby="modal-shortcuts-title" class="modal-backdrop is-hidden">
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <h2 id="modal-shortcuts-title" class="modal-title">Pintasan Keyboard</h2>
+        <button type="button" data-close-modal="modal-shortcuts" aria-label="Tutup modal" class="btn btn-icon btn-ghost">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
 
-      <div class="p-5 space-y-4 text-sm">
-        <div>
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Mode Flashcard</h3>
-          <ul class="space-y-2 text-slate-700 dark:text-slate-300">
-            <li class="flex items-center justify-between"><span>Balik kartu (Flip)</span><kbd class="kbd-badge">Spasi</kbd></li>
-            <li class="flex items-center justify-between"><span>Kartu sebelumnya / berikutnya</span><span><kbd class="kbd-badge">←</kbd> <kbd class="kbd-badge">→</kbd></span></li>
-            <li class="flex items-center justify-between"><span>Tandai Belum Paham</span><kbd class="kbd-badge">1</kbd></li>
-            <li class="flex items-center justify-between"><span>Tandai Sudah Hafal</span><kbd class="kbd-badge">2</kbd></li>
-            <li class="flex items-center justify-between"><span>Acak urutan kartu</span><kbd class="kbd-badge">S</kbd></li>
+      <div class="modal-body shortcuts-body">
+        <div class="shortcut-section">
+          <h3 class="shortcut-heading">Mode Flashcard</h3>
+          <ul class="shortcut-list">
+            <li><span>Balik kartu</span><kbd class="kbd-badge">Spasi</kbd></li>
+            <li><span>Kartu sebelumnya / berikutnya</span><span><kbd class="kbd-badge">←</kbd> <kbd class="kbd-badge">→</kbd></span></li>
+            <li><span>Tandai Belum Hafal</span><kbd class="kbd-badge">1</kbd></li>
+            <li><span>Tandai Sudah Hafal</span><kbd class="kbd-badge">2</kbd></li>
+            <li><span>Batalkan penilaian terakhir (Undo)</span><kbd class="kbd-badge">Z</kbd></li>
+            <li><span>Acak urutan kartu</span><kbd class="kbd-badge">S</kbd></li>
           </ul>
         </div>
-        <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Mode Kuis Pilihan Ganda</h3>
-          <ul class="space-y-2 text-slate-700 dark:text-slate-300">
-            <li class="flex items-center justify-between"><span>Pilih jawaban A / B / C / D</span><span><kbd class="kbd-badge">1</kbd>–<kbd class="kbd-badge">4</kbd> atau <kbd class="kbd-badge">A</kbd>–<kbd class="kbd-badge">D</kbd></span></li>
+        <div class="shortcut-section shortcut-divider">
+          <h3 class="shortcut-heading">Mode Kuis Pilihan Ganda</h3>
+          <ul class="shortcut-list">
+            <li><span>Pilih jawaban A / B / C / D</span><span><kbd class="kbd-badge">1</kbd>–<kbd class="kbd-badge">4</kbd> atau <kbd class="kbd-badge">A</kbd>–<kbd class="kbd-badge">D</kbd></span></li>
+            <li><span>Lanjut ke soal berikutnya</span><span><kbd class="kbd-badge">Enter</kbd> / <kbd class="kbd-badge">Spasi</kbd></span></li>
           </ul>
         </div>
       </div>
@@ -345,7 +405,7 @@
   </div>
 
   <!-- Toast Container -->
-  <div id="toast-container" aria-live="polite" class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+  <div id="toast-container" aria-live="polite" class="toast-container"></div>
 
   <!-- Modular JavaScript (Works seamlessly via file:// and http://) -->
   <script defer src="js/utils.js"></script>

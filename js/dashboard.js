@@ -1,11 +1,23 @@
 /**
- * KartaFlash - Dashboard View Module
+ * KartaFlash - Dashboard View Module (Meja Belajar)
  */
 (function (global) {
   'use strict';
 
   var KF = (global.KartaFlash = global.KartaFlash || {});
   var searchQuery = '';
+  var sortMode = 'recent';
+
+  function closeAllDeckMenus() {
+    var menus = document.querySelectorAll('.deck-menu-popover');
+    for (var i = 0; i < menus.length; i++) {
+      menus[i].classList.add('is-hidden');
+    }
+    var toggles = document.querySelectorAll('[data-action="toggle-deck-menu"]');
+    for (var j = 0; j < toggles.length; j++) {
+      toggles[j].setAttribute('aria-expanded', 'false');
+    }
+  }
 
   function renderStats(decks) {
     var statsEl = document.getElementById('dashboard-stats');
@@ -23,140 +35,177 @@
 
     var globalPct = totalCards > 0 ? Math.round((totalMastered / totalCards) * 100) : 0;
 
-    var items = [
-      {
-        label: 'Total Deck',
-        value: totalDecks,
-        accent: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/15',
-        icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />'
-      },
-      {
-        label: 'Total Kartu',
-        value: totalCards,
-        accent: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/15',
-        icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />'
-      },
-      {
-        label: 'Kartu Dikuasai',
-        value: totalMastered,
-        accent: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15',
-        icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />'
-      },
-      {
-        label: 'Progres Global',
-        value: globalPct + '%',
-        accent: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/15',
-        icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />'
-      }
-    ];
+    statsEl.innerHTML =
+      '<span class="summary-item"><span class="summary-value">' + totalDecks + '</span> deck</span>' +
+      '<span class="summary-sep" aria-hidden="true">·</span>' +
+      '<span class="summary-item"><span class="summary-value">' + totalCards + '</span> kartu</span>' +
+      '<span class="summary-sep" aria-hidden="true">·</span>' +
+      '<span class="summary-progress-pill">' +
+        '<span class="summary-progress-dot" aria-hidden="true"></span>' +
+        '<span><strong class="font-mono">' + totalMastered + '/' + totalCards + '</strong> sudah hafal (<strong class="font-mono">' + globalPct + '%</strong>)</span>' +
+      '</span>';
+  }
 
-    statsEl.innerHTML = items
-      .map(function (item) {
-        return (
-          '<div class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-3.5 shadow-sm">' +
-            '<div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ' + item.accent + '">' +
-              '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-                item.icon +
-              '</svg>' +
-            '</div>' +
-            '<div class="min-w-0">' +
-              '<p class="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">' + item.label + '</p>' +
-              '<p class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">' + item.value + '</p>' +
-            '</div>' +
-          '</div>'
-        );
-      })
-      .join('');
+  function renderContinueStrip(decks) {
+    var el = document.getElementById('dashboard-continue');
+    if (!el) return;
+
+    var last = KF.storage.getLastSession();
+    if (!last) {
+      el.classList.add('is-hidden');
+      el.innerHTML = '';
+      return;
+    }
+
+    var targetDeck = null;
+    for (var i = 0; i < decks.length; i++) {
+      if (decks[i].id === last.deckId) {
+        targetDeck = decks[i];
+        break;
+      }
+    }
+
+    if (!targetDeck || targetDeck.cards.length === 0) {
+      el.classList.add('is-hidden');
+      el.innerHTML = '';
+      return;
+    }
+
+    var st = KF.utils.getDeckStats(targetDeck);
+    var titleDir = KF.utils.getTextDir(targetDeck.title);
+    var titleArabic = KF.utils.getArabicClass(targetDeck.title, false);
+    var modeLabel = last.mode === 'quiz' ? 'Kuis' : 'Flashcard';
+
+    el.classList.remove('is-hidden');
+    el.innerHTML =
+      '<div class="continue-strip-copy">' +
+        '<p class="continue-kicker">Terakhir dipelajari (' + modeLabel + ') · ' + st.mastered + '/' + st.total + ' hafal</p>' +
+        '<p dir="' + titleDir + '" class="continue-title ' + titleArabic + '">' + KF.utils.escapeHtml(targetDeck.title) + '</p>' +
+      '</div>' +
+      '<div class="continue-actions">' +
+        '<button type="button" data-continue-mode="flashcard" data-id="' + KF.utils.escapeHtml(targetDeck.id) + '" class="btn btn-primary btn-sm">Lanjut Flashcard</button>' +
+        (st.total >= 4
+          ? '<button type="button" data-continue-mode="quiz" data-id="' + KF.utils.escapeHtml(targetDeck.id) + '" class="btn btn-secondary btn-sm">Uji Kuis</button>'
+          : '') +
+      '</div>';
+  }
+
+  function sortDecks(list) {
+    var copy = list.slice();
+    if (sortMode === 'title') {
+      copy.sort(function (a, b) {
+        return a.title.localeCompare(b.title, 'id');
+      });
+    } else if (sortMode === 'progress-asc') {
+      copy.sort(function (a, b) {
+        var sa = KF.utils.getDeckStats(a);
+        var sb = KF.utils.getDeckStats(b);
+        return sa.percentage - sb.percentage;
+      });
+    } else if (sortMode === 'cards-desc') {
+      copy.sort(function (a, b) {
+        return b.cards.length - a.cards.length;
+      });
+    }
+    return copy;
   }
 
   function renderDeckCard(deck) {
     var stats = KF.utils.getDeckStats(deck);
     var theme = KF.utils.getColorTheme(deck.color);
+    var deckIdEsc = KF.utils.escapeHtml(deck.id);
     var titleEsc = KF.utils.escapeHtml(deck.title);
-    var descEsc = KF.utils.escapeHtml(deck.description || 'Belum ada deskripsi untuk deck ini.');
+    var descEsc = KF.utils.escapeHtml(deck.description || 'Belum ada catatan untuk deck ini.');
     var titleDir = KF.utils.getTextDir(deck.title);
     var titleArabicClass = KF.utils.getArabicClass(deck.title, false);
     var quizReady = stats.total >= 4;
+    var isComplete = stats.percentage === 100 && stats.total > 0;
 
     return (
-      '<article data-deck-id="' + KF.utils.escapeHtml(deck.id) + '" class="group flex flex-col rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-card dark:hover:shadow-card-dark ' + theme.borderHover + ' overflow-hidden transition-all duration-200">' +
-        '<div class="h-1.5 w-full bg-gradient-to-r ' + theme.bar + '"></div>' +
-
-        '<div class="p-5 flex-1 flex flex-col">' +
-          '<div class="flex items-start justify-between gap-3">' +
-            '<h2 dir="' + titleDir + '" class="text-lg font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 ' + titleArabicClass + '">' +
-              titleEsc +
-            '</h2>' +
-            '<span class="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ' + theme.badge + '">' +
-              stats.total + ' Kartu' +
-            '</span>' +
+      '<article data-deck-id="' + deckIdEsc + '" class="deck-card ' + theme.themeClass + '">' +
+        '<div class="deck-card-body">' +
+          '<div class="deck-card-top">' +
+            '<button type="button" data-action="study-flashcard" data-id="' + deckIdEsc + '" class="deck-title-link">' +
+              '<h2 dir="' + titleDir + '" class="deck-title ' + titleArabicClass + '">' + titleEsc + '</h2>' +
+            '</button>' +
+            '<span class="deck-count-badge">' + stats.total + ' kartu</span>' +
           '</div>' +
 
-          '<p dir="auto" class="mt-2 text-sm text-slate-600 dark:text-slate-400 line-clamp-2 min-h-[2.5rem]">' +
-            descEsc +
-          '</p>' +
+          '<p dir="auto" class="deck-desc">' + descEsc + '</p>' +
 
-          '<!-- Mastery Progress -->' +
-          '<div class="mt-5">' +
-            '<div class="flex items-center justify-between text-xs font-semibold mb-1.5">' +
-              '<span class="text-slate-500 dark:text-slate-400">' + stats.mastered + ' / ' + stats.total + ' dikuasai</span>' +
-              '<span class="' + (stats.percentage === 100 && stats.total > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300') + '">' +
-                stats.percentage + '%' +
-              '</span>' +
+          '<div class="deck-progress-block">' +
+            '<div class="deck-progress-meta">' +
+              '<span class="deck-progress-label">' + stats.mastered + ' dari ' + stats.total + ' sudah hafal</span>' +
+              '<span class="deck-progress-pct ' + (isComplete ? 'is-complete' : '') + '">' + stats.percentage + '%</span>' +
             '</div>' +
-            '<div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">' +
-              '<div class="h-full rounded-full transition-all duration-500 ' + (stats.percentage === 100 && stats.total > 0 ? 'bg-emerald-500' : theme.progress) + '" style="width: ' + stats.percentage + '%"></div>' +
+            '<div class="progress-track">' +
+              '<div class="progress-fill ' + (isComplete ? 'is-complete' : '') + '" style="width: ' + stats.percentage + '%"></div>' +
             '</div>' +
           '</div>' +
 
-          '<!-- Primary Study Modes -->' +
-          '<div class="mt-5 grid grid-cols-2 gap-2.5">' +
-            '<button type="button" data-action="study-flashcard" data-id="' + KF.utils.escapeHtml(deck.id) + '" class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm shadow-indigo-500/20 transition-colors">' +
-              '<svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2" />' +
+          '<div class="deck-primary-actions">' +
+            '<button type="button" data-action="study-flashcard" data-id="' + deckIdEsc + '" class="btn btn-deck-primary btn-sm">' +
+              '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                '<rect x="3" y="6" width="14" height="14" rx="2"></rect>' +
+                '<path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h10A1.5 1.5 0 0 1 20 4.5v10a1.5 1.5 0 0 1-1.5 1.5H17"></path>' +
               '</svg>' +
-              'Flashcard' +
+              'Belajar' +
             '</button>' +
 
-            '<button type="button" data-action="start-quiz" data-id="' + KF.utils.escapeHtml(deck.id) + '" title="' + (quizReady ? 'Mulai Kuis Pilihan Ganda' : 'Minimal 4 kartu untuk kuis') + '" class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-colors ' +
-              (quizReady
-                ? 'border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-500/20'
-                : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800') + '">' +
-              '<svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />' +
+            '<button type="button" data-action="start-quiz" data-id="' + deckIdEsc + '" title="' + (quizReady ? 'Mulai Kuis Pilihan Ganda' : 'Minimal 4 kartu untuk mode kuis') + '" class="btn btn-deck-outline btn-sm">' +
+              '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                '<path d="M9 11l3 3L22 4"></path>' +
+                '<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>' +
               '</svg>' +
-              'Kuis' + (quizReady ? '' : ' (Min.4)') +
+              'Kuis' + (quizReady ? '' : ' (min. 4)') +
             '</button>' +
           '</div>' +
         '</div>' +
 
-        '<!-- Card Footer Actions -->' +
-        '<div class="px-5 py-3 bg-slate-50/80 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">' +
-          '<button type="button" data-action="manage-cards" data-id="' + KF.utils.escapeHtml(deck.id) + '" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-1">' +
-            '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />' +
+        '<div class="deck-card-footer">' +
+          '<button type="button" data-action="manage-cards" data-id="' + deckIdEsc + '" class="deck-manage-link">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+              '<line x1="12" y1="5" x2="12" y2="19"></line>' +
+              '<line x1="5" y1="12" x2="19" y2="12"></line>' +
             '</svg>' +
             'Kelola Kartu' +
           '</button>' +
 
-          '<div class="flex items-center gap-1">' +
-            '<button type="button" data-action="export-deck" data-id="' + KF.utils.escapeHtml(deck.id) + '" title="Export Deck ke JSON" aria-label="Export Deck ' + titleEsc + ' ke JSON" class="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-slate-800 transition-colors">' +
-              '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />' +
+          '<div class="deck-menu-wrap">' +
+            '<button type="button" data-action="toggle-deck-menu" data-id="' + deckIdEsc + '" aria-haspopup="menu" aria-expanded="false" aria-label="Opsi lainnya untuk ' + titleEsc + '" class="btn btn-icon btn-ghost">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+                '<circle cx="6" cy="12" r="1.75"></circle>' +
+                '<circle cx="12" cy="12" r="1.75"></circle>' +
+                '<circle cx="18" cy="12" r="1.75"></circle>' +
               '</svg>' +
             '</button>' +
 
-            '<button type="button" data-action="edit-deck" data-id="' + KF.utils.escapeHtml(deck.id) + '" title="Edit Info Deck" aria-label="Edit Deck ' + titleEsc + '" class="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 transition-colors">' +
-              '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />' +
-              '</svg>' +
-            '</button>' +
-
-            '<button type="button" data-action="delete-deck" data-id="' + KF.utils.escapeHtml(deck.id) + '" title="Hapus Deck" aria-label="Hapus Deck ' + titleEsc + '" class="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors">' +
-              '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />' +
-              '</svg>' +
-            '</button>' +
+            '<div role="menu" class="deck-menu-popover is-hidden">' +
+              '<button type="button" role="menuitem" data-action="edit-deck" data-id="' + deckIdEsc + '" class="popover-item">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                  '<path d="M12 20h9"></path>' +
+                  '<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>' +
+                '</svg>' +
+                'Edit Info Deck' +
+              '</button>' +
+              '<button type="button" role="menuitem" data-action="export-deck" data-id="' + deckIdEsc + '" class="popover-item">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                  '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>' +
+                  '<polyline points="7 10 12 15 17 10"></polyline>' +
+                  '<line x1="12" y1="15" x2="12" y2="3"></line>' +
+                '</svg>' +
+                'Export ke JSON' +
+              '</button>' +
+              '<div class="popover-divider"></div>' +
+              '<button type="button" role="menuitem" data-action="delete-deck" data-id="' + deckIdEsc + '" class="popover-item popover-item-danger">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                  '<polyline points="3 6 5 6 21 6"></polyline>' +
+                  '<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>' +
+                  '<path d="M10 11v6M14 11v6"></path>' +
+                '</svg>' +
+                'Hapus Deck' +
+              '</button>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</article>'
@@ -166,6 +215,7 @@
   function render() {
     var decks = KF.storage.loadDecks();
     renderStats(decks);
+    renderContinueStrip(decks);
 
     var grid = document.getElementById('deck-grid');
     var countLabel = document.getElementById('deck-count-label');
@@ -179,41 +229,47 @@
       return inTitle || inDesc;
     });
 
+    var ordered = sortDecks(filtered);
+
     if (countLabel) {
       countLabel.textContent = q
-        ? 'Menampilkan ' + filtered.length + ' dari ' + decks.length + ' deck'
-        : 'Total ' + decks.length + ' deck tersedia';
+        ? 'Menampilkan ' + ordered.length + ' dari ' + decks.length + ' deck'
+        : ordered.length + ' deck di meja';
     }
 
     if (decks.length === 0) {
       grid.innerHTML =
-        '<div class="col-span-full rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 p-10 text-center">' +
-          '<div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">' +
-            '<svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2" />' +
-            '</svg>' +
-          '</div>' +
-          '<h3 class="text-lg font-bold text-slate-900 dark:text-white">Belum ada deck belajar</h3>' +
-          '<p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">Buat deck pertama Anda, impor dari file JSON, atau muat ulang deck contoh bawaan untuk mulai belajar.</p>' +
-          '<div class="mt-5 flex flex-wrap items-center justify-center gap-3">' +
-            '<button type="button" id="btn-empty-new-deck" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors">+ Buat Deck Baru</button>' +
-            '<button type="button" id="btn-empty-load-samples" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold transition-colors">Muat Deck Contoh</button>' +
+        '<div class="empty-paper-state">' +
+          '<svg class="empty-art" width="64" height="52" viewBox="0 0 64 52" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<rect x="10" y="12" width="38" height="30" rx="4" opacity="0.35"></rect>' +
+            '<rect x="16" y="7" width="38" height="30" rx="4" fill="var(--bg-paper-elevated)"></rect>' +
+            '<line x1="23" y1="16" x2="46" y2="16"></line>' +
+            '<line x1="23" y1="22" x2="40" y2="22" opacity="0.65"></line>' +
+            '<line x1="23" y1="28" x2="33" y2="28" opacity="0.45"></line>' +
+          '</svg>' +
+          '<h3 class="empty-title">Meja belajarmu masih kosong</h3>' +
+          '<p class="empty-desc">Mulai dengan membuat deck baru, mengimpor cadangan JSON, atau memuat deck contoh bawaan.</p>' +
+          '<div class="empty-actions">' +
+            '<button type="button" id="btn-empty-new-deck" class="btn btn-primary">+ Buat Deck Baru</button>' +
+            '<button type="button" id="btn-empty-load-samples" class="btn btn-secondary">Muat Deck Contoh</button>' +
           '</div>' +
         '</div>';
       return;
     }
 
-    if (filtered.length === 0) {
+    if (ordered.length === 0) {
       grid.innerHTML =
-        '<div class="col-span-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 text-center">' +
-          '<p class="text-base font-bold text-slate-900 dark:text-white">Deck tidak ditemukan</p>' +
-          '<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Tidak ada deck yang cocok dengan kata kunci "' + KF.utils.escapeHtml(searchQuery) + '".</p>' +
-          '<button type="button" id="btn-clear-deck-search" class="mt-4 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors">Reset Pencarian</button>' +
+        '<div class="empty-paper-state">' +
+          '<h3 class="empty-title">Deck tidak ditemukan</h3>' +
+          '<p class="empty-desc">Tidak ada deck yang cocok dengan kata kunci "' + KF.utils.escapeHtml(searchQuery) + '".</p>' +
+          '<div class="empty-actions">' +
+            '<button type="button" id="btn-clear-deck-search" class="btn btn-secondary">Reset Pencarian</button>' +
+          '</div>' +
         '</div>';
       return;
     }
 
-    grid.innerHTML = filtered.map(renderDeckCard).join('');
+    grid.innerHTML = ordered.map(renderDeckCard).join('');
   }
 
   function setSelectedColor(color) {
@@ -240,17 +296,17 @@
     if (deckId) {
       var deck = KF.storage.getDeckById(deckId);
       if (!deck) return;
-      modalTitle.textContent = 'Edit Deck';
+      modalTitle.textContent = 'Edit Info Deck';
       editIdInput.value = deck.id;
       titleInput.value = deck.title;
       descInput.value = deck.description || '';
-      setSelectedColor(deck.color || 'indigo');
+      setSelectedColor(deck.color || 'emerald');
     } else {
       modalTitle.textContent = 'Buat Deck Baru';
       editIdInput.value = '';
       titleInput.value = '';
       descInput.value = '';
-      setSelectedColor('indigo');
+      setSelectedColor('emerald');
     }
 
     KF.utils.openModal('modal-deck');
@@ -268,10 +324,31 @@
       });
     }
 
+    var sortSelect = document.getElementById('select-sort-decks');
+    if (sortSelect) {
+      sortSelect.addEventListener('change', function (e) {
+        sortMode = e.target.value || 'recent';
+        render();
+      });
+    }
+
     var newDeckBtn = document.getElementById('btn-new-deck');
     if (newDeckBtn) {
       newDeckBtn.addEventListener('click', function () {
         openDeckModal(null);
+      });
+    }
+
+    var continueStrip = document.getElementById('dashboard-continue');
+    if (continueStrip) {
+      continueStrip.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-continue-mode]');
+        if (!btn) return;
+        var mode = btn.getAttribute('data-continue-mode');
+        var id = btn.getAttribute('data-id');
+        if (id && (mode === 'flashcard' || mode === 'quiz')) {
+          KF.app.navigate(mode, id);
+        }
       });
     }
 
@@ -286,6 +363,7 @@
         var payload = KF.storage.buildAllExportPayload();
         var dateTag = new Date().toISOString().slice(0, 10);
         KF.utils.downloadJson('kartaflash-backup-' + dateTag + '.json', payload);
+        KF.utils.closeModal('modal-data');
         KF.utils.showToast('Berhasil meng-export ' + decks.length + ' deck ke JSON.', 'success');
       });
     }
@@ -307,6 +385,7 @@
           try {
             var json = JSON.parse(ev.target.result);
             var res = KF.storage.importDecksFromJson(json);
+            KF.utils.closeModal('modal-data');
             render();
             KF.utils.showToast(
               'Berhasil mengimpor ' + res.importedCount + ' deck (' + res.cardCount + ' kartu).',
@@ -348,16 +427,22 @@
 
         if (id) {
           KF.storage.updateDeck(id, { title: title, description: description, color: color });
-          KF.utils.showToast('Deck berhasil diperbarui.', 'success');
+          KF.utils.showToast('Info deck diperbarui.', 'success');
         } else {
           var created = KF.storage.createDeck({ title: title, description: description, color: color });
-          KF.utils.showToast('Deck "' + created.title + '" berhasil dibuat.', 'success');
+          KF.utils.showToast('Deck "' + created.title + '" dibuat.', 'success');
         }
 
         KF.utils.closeModal('modal-deck');
         render();
       });
     }
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.deck-menu-wrap')) {
+        closeAllDeckMenus();
+      }
+    });
 
     var grid = document.getElementById('deck-grid');
     if (grid) {
@@ -369,7 +454,7 @@
         if (e.target.closest('#btn-empty-load-samples')) {
           KF.storage.resetToDefaultDecks();
           render();
-          KF.utils.showToast('Deck contoh bawaan berhasil dimuat.', 'success');
+          KF.utils.showToast('Deck contoh bawaan dimuat.', 'success');
           return;
         }
         if (e.target.closest('#btn-clear-deck-search')) {
@@ -384,6 +469,21 @@
 
         var action = actionBtn.getAttribute('data-action');
         var deckId = actionBtn.getAttribute('data-id');
+
+        if (action === 'toggle-deck-menu') {
+          var wrap = actionBtn.closest('.deck-menu-wrap');
+          var popover = wrap ? wrap.querySelector('.deck-menu-popover') : null;
+          var isCurrentlyOpen = popover && !popover.classList.contains('is-hidden');
+          closeAllDeckMenus();
+          if (popover && !isCurrentlyOpen) {
+            popover.classList.remove('is-hidden');
+            actionBtn.setAttribute('aria-expanded', 'true');
+          }
+          return;
+        }
+
+        closeAllDeckMenus();
+
         var deck = KF.storage.getDeckById(deckId);
         if (!deck) return;
 
@@ -410,7 +510,7 @@
             if (!confirmed) return;
             KF.storage.deleteDeck(deckId);
             render();
-            KF.utils.showToast('Deck "' + deck.title + '" telah dihapus.', 'info');
+            KF.utils.showToast('Deck "' + deck.title + '" dihapus.', 'info');
           });
         }
       });
@@ -420,6 +520,7 @@
   KF.dashboard = {
     render: render,
     bindEvents: bindEvents,
-    openDeckModal: openDeckModal
+    openDeckModal: openDeckModal,
+    closeAllDeckMenus: closeAllDeckMenus
   };
 })(typeof window !== 'undefined' ? window : globalThis);

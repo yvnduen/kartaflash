@@ -9,49 +9,16 @@
   var ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
   var COLOR_THEMES = {
-    indigo: {
-      bar: 'from-indigo-500 to-violet-500',
-      badge: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
-      progress: 'bg-indigo-600 dark:bg-indigo-500',
-      iconBg: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400',
-      borderHover: 'hover:border-indigo-300 dark:hover:border-indigo-500/50'
-    },
-    emerald: {
-      bar: 'from-emerald-500 to-teal-500',
-      badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-      progress: 'bg-emerald-600 dark:bg-emerald-500',
-      iconBg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-      borderHover: 'hover:border-emerald-300 dark:hover:border-emerald-500/50'
-    },
-    sky: {
-      bar: 'from-sky-500 to-cyan-500',
-      badge: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
-      progress: 'bg-sky-600 dark:bg-sky-500',
-      iconBg: 'bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400',
-      borderHover: 'hover:border-sky-300 dark:hover:border-sky-500/50'
-    },
-    amber: {
-      bar: 'from-amber-500 to-orange-500',
-      badge: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
-      progress: 'bg-amber-500 dark:bg-amber-400',
-      iconBg: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
-      borderHover: 'hover:border-amber-300 dark:hover:border-amber-500/50'
-    },
-    rose: {
-      bar: 'from-rose-500 to-pink-500',
-      badge: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
-      progress: 'bg-rose-600 dark:bg-rose-500',
-      iconBg: 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400',
-      borderHover: 'hover:border-rose-300 dark:hover:border-rose-500/50'
-    },
-    violet: {
-      bar: 'from-violet-500 to-purple-500',
-      badge: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
-      progress: 'bg-violet-600 dark:bg-violet-500',
-      iconBg: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
-      borderHover: 'hover:border-violet-300 dark:hover:border-violet-500/50'
-    }
+    emerald: { themeClass: 'deck-theme-emerald', label: 'Hijau Zamrud' },
+    indigo: { themeClass: 'deck-theme-indigo', label: 'Biru Tinta' },
+    sky: { themeClass: 'deck-theme-sky', label: 'Biru Arsip' },
+    amber: { themeClass: 'deck-theme-amber', label: 'Kuning Okra' },
+    rose: { themeClass: 'deck-theme-rose', label: 'Terakota' },
+    violet: { themeClass: 'deck-theme-violet', label: 'Ungu Anggur' }
   };
+
+  var modalReturnFocus = {};
+  var activeFocusTrapHandler = null;
 
   function generateId(prefix) {
     var p = prefix || 'id';
@@ -118,7 +85,7 @@
   }
 
   function getColorTheme(colorKey) {
-    return COLOR_THEMES[colorKey] || COLOR_THEMES.indigo;
+    return COLOR_THEMES[colorKey] || COLOR_THEMES.emerald;
   }
 
   function downloadJson(filename, data) {
@@ -140,28 +107,32 @@
     var container = document.getElementById('toast-container');
     if (!container) return;
 
-    var palette = {
-      success: 'bg-emerald-600 text-white border-emerald-500',
-      error: 'bg-rose-600 text-white border-rose-500',
-      warning: 'bg-amber-500 text-slate-950 border-amber-400',
-      info: 'bg-slate-900 text-white dark:bg-slate-800 border-slate-700'
+    while (container.children.length >= 3) {
+      container.removeChild(container.firstElementChild);
+    }
+
+    var typeClass = {
+      success: 'toast-success',
+      error: 'toast-error',
+      warning: 'toast-warning',
+      info: 'toast-info'
     };
 
     var iconSvg = {
-      success: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />',
-      error: '<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />',
-      warning: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />',
-      info: '<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />'
+      success: '<polyline points="20 6 9 17 4 12"></polyline>',
+      error: '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
+      warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>',
+      info: '<circle cx="12" cy="12" r="9"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>'
     };
 
-    var t = type && palette[type] ? type : 'info';
+    var t = type && typeClass[type] ? type : 'info';
     var toast = document.createElement('div');
-    toast.className = 'toast-item pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-lg text-sm font-medium ' + palette[t];
+    toast.className = 'toast-item ' + typeClass[t];
     toast.innerHTML =
-      '<svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">' +
-      iconSvg[t] +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        iconSvg[t] +
       '</svg>' +
-      '<span class="flex-1">' + escapeHtml(message) + '</span>';
+      '<span>' + escapeHtml(message) + '</span>';
 
     container.appendChild(toast);
 
@@ -172,27 +143,86 @@
       setTimeout(function () {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
       }, 220);
-    }, 3000);
+    }, 2800);
+  }
+
+  function getFocusableElements(container) {
+    var nodes = container.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    var visible = [];
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].offsetParent !== null) {
+        visible.push(nodes[i]);
+      }
+    }
+    return visible;
+  }
+
+  function attachFocusTrap(modal) {
+    detachFocusTrap();
+    activeFocusTrapHandler = function (e) {
+      if (e.key !== 'Tab') return;
+      var focusables = getFocusableElements(modal);
+      if (focusables.length === 0) return;
+
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first || !modal.contains(document.activeElement)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last || !modal.contains(document.activeElement)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', activeFocusTrapHandler);
+  }
+
+  function detachFocusTrap() {
+    if (activeFocusTrapHandler) {
+      document.removeEventListener('keydown', activeFocusTrapHandler);
+      activeFocusTrapHandler = null;
+    }
   }
 
   function openModal(modalId) {
     var modal = document.getElementById(modalId);
     if (!modal) return;
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    modalReturnFocus[modalId] = document.activeElement;
+    modal.classList.remove('is-hidden');
+    attachFocusTrap(modal);
+
+    var focusables = getFocusableElements(modal);
+    if (focusables.length > 0) {
+      setTimeout(function () {
+        focusables[0].focus();
+      }, 20);
+    }
   }
 
   function closeModal(modalId) {
     var modal = document.getElementById(modalId);
-    if (!modal) return;
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (!modal || modal.classList.contains('is-hidden')) return;
+    modal.classList.add('is-hidden');
+    detachFocusTrap();
+
+    var prev = modalReturnFocus[modalId];
+    delete modalReturnFocus[modalId];
+    if (prev && typeof prev.focus === 'function' && document.contains(prev)) {
+      prev.focus();
+    }
   }
 
   function isAnyModalOpen() {
     var modals = document.querySelectorAll('[role="dialog"]');
     for (var i = 0; i < modals.length; i++) {
-      if (!modals[i].classList.contains('hidden')) {
+      if (!modals[i].classList.contains('is-hidden')) {
         return true;
       }
     }
@@ -215,15 +245,15 @@
     }
 
     titleEl.textContent = opts.title || 'Konfirmasi';
-    msgEl.textContent = opts.message || 'Apakah Anda yakin ingin melanjutkan?';
+    msgEl.textContent = opts.message || 'Apakah kamu yakin ingin melanjutkan?';
     okBtn.textContent = opts.confirmText || 'Ya, Lanjutkan';
 
     if (opts.variant === 'primary') {
-      okBtn.className = 'px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors';
-      iconBox.className = 'w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0';
+      okBtn.className = 'btn btn-primary';
+      iconBox.className = 'confirm-icon confirm-icon-primary';
     } else {
-      okBtn.className = 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold shadow-sm transition-colors';
-      iconBox.className = 'w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0';
+      okBtn.className = 'btn btn-danger';
+      iconBox.className = 'confirm-icon confirm-icon-danger';
     }
 
     openModal('modal-confirm');

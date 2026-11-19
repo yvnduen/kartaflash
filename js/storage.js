@@ -7,6 +7,8 @@
   var KF = (global.KartaFlash = global.KartaFlash || {});
   var STORAGE_KEY = 'kartaflash_decks_v1';
   var THEME_KEY = 'kartaflash_theme_v1';
+  var LAST_SESSION_KEY = 'kartaflash_last_session_v1';
+  var QUIZ_TIMED_KEY = 'kartaflash_quiz_timed_v1';
   var VALID_COLORS = ['indigo', 'emerald', 'sky', 'amber', 'rose', 'violet'];
 
   function sanitizeCard(rawCard) {
@@ -28,7 +30,7 @@
     var title = typeof rawDeck.title === 'string' ? rawDeck.title.trim() : '';
     if (!title) return null;
 
-    var color = VALID_COLORS.indexOf(rawDeck.color) !== -1 ? rawDeck.color : 'indigo';
+    var color = VALID_COLORS.indexOf(rawDeck.color) !== -1 ? rawDeck.color : 'emerald';
     var description = typeof rawDeck.description === 'string' ? rawDeck.description.trim() : '';
     var rawCards = Array.isArray(rawDeck.cards) ? rawDeck.cards : [];
     var cards = [];
@@ -86,7 +88,7 @@
       return true;
     } catch (err) {
       if (KF.utils && KF.utils.showToast) {
-        KF.utils.showToast('Gagal menyimpan ke localStorage (kapasitas penuh atau diblokir).', 'error');
+        KF.utils.showToast('Gagal menyimpan ke penyimpanan browser (kapasitas penuh atau diblokir).', 'error');
       }
       return false;
     }
@@ -106,7 +108,7 @@
       id: KF.utils.generateId('deck'),
       title: payload.title,
       description: payload.description || '',
-      color: payload.color || 'indigo',
+      color: payload.color || 'emerald',
       createdAt: new Date().toISOString(),
       cards: []
     }, false);
@@ -157,6 +159,34 @@
     return null;
   }
 
+  function addCardsBulk(deckId, pairs) {
+    if (!Array.isArray(pairs) || pairs.length === 0) return [];
+    var decks = loadDecks();
+    var added = [];
+
+    for (var i = 0; i < decks.length; i++) {
+      if (decks[i].id === deckId) {
+        for (var j = 0; j < pairs.length; j++) {
+          var card = sanitizeCard({
+            id: KF.utils.generateId('card'),
+            front: pairs[j].front,
+            back: pairs[j].back,
+            mastered: false
+          });
+          if (card) {
+            decks[i].cards.push(card);
+            added.push(card);
+          }
+        }
+        if (added.length > 0) {
+          saveDecks(decks);
+        }
+        return added;
+      }
+    }
+    return [];
+  }
+
   function updateCard(deckId, cardId, payload) {
     var decks = loadDecks();
     for (var i = 0; i < decks.length; i++) {
@@ -184,6 +214,33 @@
 
   function setCardMastered(deckId, cardId, mastered) {
     return updateCard(deckId, cardId, { mastered: Boolean(mastered) });
+  }
+
+  function markCardsMastered(deckId, cardIds, mastered) {
+    if (!Array.isArray(cardIds) || cardIds.length === 0) return 0;
+    var lookup = {};
+    for (var k = 0; k < cardIds.length; k++) {
+      lookup[cardIds[k]] = true;
+    }
+
+    var decks = loadDecks();
+    var changed = 0;
+    for (var i = 0; i < decks.length; i++) {
+      if (decks[i].id === deckId) {
+        var cards = decks[i].cards;
+        for (var j = 0; j < cards.length; j++) {
+          if (lookup[cards[j].id] && cards[j].mastered !== Boolean(mastered)) {
+            cards[j].mastered = Boolean(mastered);
+            changed++;
+          }
+        }
+        if (changed > 0) {
+          saveDecks(decks);
+        }
+        return changed;
+      }
+    }
+    return 0;
   }
 
   function deleteCard(deckId, cardId) {
@@ -215,6 +272,7 @@
   function resetToDefaultDecks() {
     var defaults = KF.data.getDefaultDecks();
     saveDecks(defaults);
+    clearLastSession();
     return defaults;
   }
 
@@ -226,7 +284,7 @@
       deck: {
         title: deck.title,
         description: deck.description || '',
-        color: deck.color || 'indigo',
+        color: deck.color || 'emerald',
         cards: deck.cards.map(function (c) {
           return {
             front: c.front,
@@ -248,7 +306,7 @@
         return {
           title: deck.title,
           description: deck.description || '',
-          color: deck.color || 'indigo',
+          color: deck.color || 'emerald',
           cards: deck.cards.map(function (c) {
             return {
               front: c.front,
@@ -316,6 +374,53 @@
     } catch (e) {}
   }
 
+  function getLastSession() {
+    try {
+      var raw = global.localStorage.getItem(LAST_SESSION_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.deckId) return null;
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveLastSession(deckId, mode) {
+    try {
+      global.localStorage.setItem(
+        LAST_SESSION_KEY,
+        JSON.stringify({
+          deckId: deckId,
+          mode: mode || 'flashcard',
+          updatedAt: new Date().toISOString()
+        })
+      );
+    } catch (e) {}
+  }
+
+  function clearLastSession() {
+    try {
+      global.localStorage.removeItem(LAST_SESSION_KEY);
+    } catch (e) {}
+  }
+
+  function getQuizTimedMode() {
+    try {
+      var raw = global.localStorage.getItem(QUIZ_TIMED_KEY);
+      if (raw === null) return true;
+      return raw === 'true';
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function saveQuizTimedMode(enabled) {
+    try {
+      global.localStorage.setItem(QUIZ_TIMED_KEY, enabled ? 'true' : 'false');
+    } catch (e) {}
+  }
+
   KF.storage = {
     loadDecks: loadDecks,
     saveDecks: saveDecks,
@@ -324,8 +429,10 @@
     updateDeck: updateDeck,
     deleteDeck: deleteDeck,
     addCard: addCard,
+    addCardsBulk: addCardsBulk,
     updateCard: updateCard,
     setCardMastered: setCardMastered,
+    markCardsMastered: markCardsMastered,
     deleteCard: deleteCard,
     resetDeckProgress: resetDeckProgress,
     resetToDefaultDecks: resetToDefaultDecks,
@@ -333,6 +440,11 @@
     buildAllExportPayload: buildAllExportPayload,
     importDecksFromJson: importDecksFromJson,
     getSavedTheme: getSavedTheme,
-    saveTheme: saveTheme
+    saveTheme: saveTheme,
+    getLastSession: getLastSession,
+    saveLastSession: saveLastSession,
+    clearLastSession: clearLastSession,
+    getQuizTimedMode: getQuizTimedMode,
+    saveQuizTimedMode: saveQuizTimedMode
   };
 })(typeof window !== 'undefined' ? window : globalThis);
