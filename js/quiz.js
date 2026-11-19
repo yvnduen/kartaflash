@@ -1,5 +1,5 @@
 /**
- * KartaFlash - Mode 2: Interactive Multiple-Choice Quiz Module
+ * KartaFlash - Mode 2: Interactive Multiple-Choice Quiz Module (Focus Mode)
  */
 (function (global) {
   'use strict';
@@ -12,10 +12,13 @@
     questions: [],
     currentIndex: 0,
     score: 0,
+    correctCardIds: [],
     wrongAnswers: [],
+    wrongCards: [],
     currentOptions: [],
     isLocked: false,
     isFinished: false,
+    timedMode: true,
     timerIntervalId: null,
     advanceTimeoutId: null,
     questionStartTime: 0,
@@ -71,20 +74,19 @@
     return KF.utils.shuffleArray(options);
   }
 
-  function start(deckId) {
+  function beginSession(deck, customQuestions) {
     cleanup();
-    var deck = KF.storage.getDeckById(deckId);
-    if (!deck) {
-      KF.app.navigate('dashboard');
-      return;
-    }
-
-    state.deckId = deckId;
+    state.deckId = deck.id;
     state.currentIndex = 0;
     state.score = 0;
+    state.correctCardIds = [];
     state.wrongAnswers = [];
+    state.wrongCards = [];
     state.isLocked = false;
     state.isFinished = false;
+    state.timedMode = KF.storage.getQuizTimedMode();
+
+    KF.storage.saveLastSession(deck.id, 'quiz');
 
     if (deck.cards.length < 4 || countUniqueAnswers(deck.cards) < 4) {
       state.questions = [];
@@ -92,8 +94,21 @@
       return;
     }
 
-    state.questions = KF.utils.shuffleArray(deck.cards);
+    var source = Array.isArray(customQuestions) && customQuestions.length > 0
+      ? customQuestions
+      : deck.cards;
+
+    state.questions = KF.utils.shuffleArray(source);
     loadCurrentQuestion();
+  }
+
+  function start(deckId) {
+    var deck = KF.storage.getDeckById(deckId);
+    if (!deck) {
+      KF.app.navigate('dashboard');
+      return;
+    }
+    beginSession(deck, null);
   }
 
   function renderPrerequisiteNotice(deck) {
@@ -102,31 +117,36 @@
 
     var notEnoughCards = deck.cards.length < 4;
     container.innerHTML =
-      '<div class="max-w-xl mx-auto mt-4">' +
-        '<button type="button" id="btn-quiz-back" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mb-4">' +
-          '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-            '<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />' +
-          '</svg>' +
-          'Kembali ke Dashboard' +
-        '</button>' +
+      '<div class="quiz-workspace">' +
+        '<div class="focus-topbar">' +
+          '<div class="focus-topbar-left">' +
+            '<button type="button" id="btn-quiz-back" class="btn btn-secondary btn-sm">' +
+              '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                '<polyline points="15 18 9 12 15 6"></polyline>' +
+              '</svg>' +
+              'Kembali' +
+            '</button>' +
+            '<h1 id="quiz-heading" class="focus-deck-title">' + KF.utils.escapeHtml(deck.title) + '</h1>' +
+          '</div>' +
+        '</div>' +
 
-        '<div class="rounded-3xl border border-amber-200 dark:border-amber-500/30 bg-white dark:bg-slate-900 p-8 text-center shadow-card dark:shadow-card-dark">' +
-          '<div class="w-14 h-14 mx-auto rounded-2xl bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4">' +
-            '<svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-              '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />' +
+        '<div class="editorial-notice-card">' +
+          '<div class="notice-seal notice-seal-warm">' +
+            '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+              '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>' +
+              '<line x1="12" y1="9" x2="12" y2="13"></line>' +
+              '<line x1="12" y1="17" x2="12.01" y2="17"></line>' +
             '</svg>' +
           '</div>' +
-          '<h1 id="quiz-heading" class="text-xl font-extrabold text-slate-900 dark:text-white">' +
-            (notEnoughCards ? 'Minimal 4 Kartu Diperlukan' : 'Butuh Minimal 4 Jawaban Unik') +
-          '</h1>' +
-          '<p class="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">' +
+          '<h2 class="notice-title">' + (notEnoughCards ? 'Minimal 4 Kartu Diperlukan' : 'Butuh Minimal 4 Jawaban Unik') + '</h2>' +
+          '<p class="notice-desc">' +
             (notEnoughCards
-              ? 'Deck "' + KF.utils.escapeHtml(deck.title) + '" saat ini baru memiliki ' + deck.cards.length + ' kartu. Tambahkan minimal ' + (4 - deck.cards.length) + ' kartu lagi agar Mode Kuis dapat membuat 4 pilihan jawaban.'
-              : 'Deck "' + KF.utils.escapeHtml(deck.title) + '" memiliki beberapa kartu dengan arti/jawaban yang sama persis sehingga belum mencukupi 4 pilihan jawaban unik tanpa duplikat.') +
+              ? 'Deck "' + KF.utils.escapeHtml(deck.title) + '" baru memiliki ' + deck.cards.length + ' kartu. Tambahkan minimal ' + (4 - deck.cards.length) + ' kartu lagi agar Mode Kuis bisa menyusun 4 pilihan jawaban.'
+              : 'Deck "' + KF.utils.escapeHtml(deck.title) + '" memiliki beberapa kartu dengan jawaban yang sama persis sehingga belum cukup untuk 4 pilihan unik.') +
           '</p>' +
-          '<div class="mt-6 flex flex-wrap justify-center gap-3">' +
-            '<button type="button" id="btn-quiz-go-manage" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors">+ Kelola &amp; Tambah Kartu</button>' +
-            '<button type="button" id="btn-quiz-go-flashcard" class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors">Belajar Flashcard</button>' +
+          '<div class="notice-actions">' +
+            '<button type="button" id="btn-quiz-go-manage" class="btn btn-primary">+ Kelola &amp; Tambah Kartu</button>' +
+            '<button type="button" id="btn-quiz-go-flashcard" class="btn btn-secondary">Belajar Flashcard</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -161,7 +181,9 @@
     state.currentOptions = generateQuestionOptions(qCard, deck.cards);
 
     renderQuestion(deck, qCard);
-    startTimer();
+    if (state.timedMode) {
+      startTimer();
+    }
   }
 
   function startTimer() {
@@ -183,19 +205,21 @@
       if (timerBar) {
         timerBar.style.width = pct + '%';
         if (secLeft <= 3) {
-          timerBar.className = 'h-full rounded-full bg-rose-500 transition-all duration-100';
+          timerBar.className = 'quiz-timer-strip-fill is-urgent';
         } else if (secLeft <= 6) {
-          timerBar.className = 'h-full rounded-full bg-amber-500 transition-all duration-100';
+          timerBar.className = 'quiz-timer-strip-fill is-warning';
         } else {
-          timerBar.className = 'h-full rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-100';
+          timerBar.className = 'quiz-timer-strip-fill';
         }
       }
 
       if (timerPill) {
         if (secLeft <= 3) {
-          timerPill.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400 animate-pulse';
+          timerPill.className = 'timer-pill is-urgent';
         } else if (secLeft <= 6) {
-          timerPill.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300';
+          timerPill.className = 'timer-pill is-warning';
+        } else {
+          timerPill.className = 'timer-pill';
         }
       }
 
@@ -207,11 +231,50 @@
     }, 100);
   }
 
+  function toggleTimedMode() {
+    if (state.isLocked || state.isFinished) return;
+    state.timedMode = !state.timedMode;
+    KF.storage.saveQuizTimedMode(state.timedMode);
+
+    if (state.timerIntervalId) {
+      clearInterval(state.timerIntervalId);
+      state.timerIntervalId = null;
+    }
+
+    var toggleBtn = document.getElementById('btn-quiz-toggle-timer');
+    var timerStrip = document.getElementById('quiz-timer-strip');
+    var timerPill = document.getElementById('quiz-timer-pill');
+    var timerBar = document.getElementById('quiz-timer-bar');
+    var timerText = document.getElementById('quiz-timer-text');
+
+    if (toggleBtn) {
+      toggleBtn.classList.toggle('is-active-primary', !state.timedMode);
+      toggleBtn.textContent = state.timedMode ? 'Timer: 15d' : 'Mode Santai ✓';
+    }
+
+    if (state.timedMode) {
+      state.remainingMs = QUESTION_SECONDS * 1000;
+      if (timerStrip) timerStrip.classList.remove('is-hidden');
+      if (timerBar) {
+        timerBar.style.width = '100%';
+        timerBar.className = 'quiz-timer-strip-fill';
+      }
+      if (timerPill) timerPill.className = 'timer-pill';
+      if (timerText) timerText.textContent = QUESTION_SECONDS + 'd';
+      startTimer();
+    } else {
+      if (timerStrip) timerStrip.classList.add('is-hidden');
+      if (timerPill) timerPill.className = 'timer-pill';
+      if (timerText) timerText.textContent = 'Santai';
+    }
+  }
+
   function handleTimeout() {
     if (state.isLocked) return;
     state.isLocked = true;
 
     var qCard = state.questions[state.currentIndex];
+    state.wrongCards.push(qCard);
     state.wrongAnswers.push({
       front: qCard.front,
       correctAnswer: qCard.back,
@@ -220,7 +283,6 @@
     });
 
     revealOptionFeedback(-1, false, true);
-    scheduleNextQuestion(1600);
   }
 
   function selectOption(optionIndex) {
@@ -239,7 +301,9 @@
 
     if (isCorrect) {
       state.score++;
+      state.correctCardIds.push(qCard.id);
     } else {
+      state.wrongCards.push(qCard);
       state.wrongAnswers.push({
         front: qCard.front,
         correctAnswer: qCard.back,
@@ -249,7 +313,11 @@
     }
 
     revealOptionFeedback(optionIndex, isCorrect, false);
-    scheduleNextQuestion(isCorrect ? 1050 : 1550);
+
+    // Only auto-advance when correct; wrong answers stay paused so user can study the correction
+    if (isCorrect) {
+      scheduleNextQuestion(1050);
+    }
   }
 
   function revealOptionFeedback(selectedIdx, isCorrect, isTimeout) {
@@ -260,34 +328,47 @@
       btn.disabled = true;
 
       if (opt.isCorrect) {
-        btn.className = 'quiz-option-btn w-full text-left p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-100 shadow-sm transition-all flex items-center justify-between gap-3';
+        btn.className = 'quiz-option is-correct';
         var badge = btn.querySelector('.opt-status-icon');
         if (badge) {
-          badge.innerHTML = '<svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>';
+          badge.innerHTML =
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+              '<polyline points="20 6 9 17 4 12"></polyline>' +
+            '</svg>';
         }
       } else if (i === selectedIdx && !isCorrect) {
-        btn.className = 'quiz-option-btn w-full text-left p-4 rounded-2xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-500/20 text-rose-900 dark:text-rose-100 shadow-sm transition-all flex items-center justify-between gap-3';
+        btn.className = 'quiz-option is-wrong';
         var wrongBadge = btn.querySelector('.opt-status-icon');
         if (wrongBadge) {
-          wrongBadge.innerHTML = '<svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>';
+          wrongBadge.innerHTML =
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+              '<line x1="18" y1="6" x2="6" y2="18"></line>' +
+              '<line x1="6" y1="6" x2="18" y2="18"></line>' +
+            '</svg>';
         }
       } else {
-        btn.className = 'quiz-option-btn w-full text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 opacity-60 transition-all flex items-center justify-between gap-3';
+        btn.className = 'quiz-option is-muted';
       }
     }
 
     var feedbackBanner = document.getElementById('quiz-feedback-banner');
     if (feedbackBanner) {
-      feedbackBanner.classList.remove('hidden');
+      feedbackBanner.classList.remove('is-hidden');
       if (isTimeout) {
-        feedbackBanner.className = 'mt-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-sm font-semibold bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30';
-        feedbackBanner.innerHTML = '<span>Waktu habis! Jawaban yang benar ditandai warna hijau.</span><button type="button" id="btn-quiz-skip-wait" class="text-xs underline font-bold shrink-0">Lanjut →</button>';
+        feedbackBanner.className = 'quiz-feedback-banner is-wrong';
+        feedbackBanner.innerHTML =
+          '<span>Waktu habis — pelajari jawaban benar yang ditandai hijau.</span>' +
+          '<button type="button" id="btn-quiz-skip-wait" class="btn btn-secondary btn-sm">Soal Berikutnya <kbd class="kbd-badge">Enter</kbd></button>';
       } else if (isCorrect) {
-        feedbackBanner.className = 'mt-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-sm font-semibold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30';
-        feedbackBanner.innerHTML = '<span>Benar! Jawaban tepat.</span><button type="button" id="btn-quiz-skip-wait" class="text-xs underline font-bold shrink-0">Lanjut →</button>';
+        feedbackBanner.className = 'quiz-feedback-banner is-correct';
+        feedbackBanner.innerHTML =
+          '<span>Tepat sekali!</span>' +
+          '<button type="button" id="btn-quiz-skip-wait" class="btn btn-secondary btn-sm">Lanjut →</button>';
       } else {
-        feedbackBanner.className = 'mt-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-sm font-semibold bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30';
-        feedbackBanner.innerHTML = '<span>Kurang tepat! Jawaban benar ditandai warna hijau.</span><button type="button" id="btn-quiz-skip-wait" class="text-xs underline font-bold shrink-0">Lanjut →</button>';
+        feedbackBanner.className = 'quiz-feedback-banner is-wrong';
+        feedbackBanner.innerHTML =
+          '<span>Kurang tepat — jawaban benar ditandai warna hijau.</span>' +
+          '<button type="button" id="btn-quiz-skip-wait" class="btn btn-secondary btn-sm">Soal Berikutnya <kbd class="kbd-badge">Enter</kbd></button>';
       }
 
       var skipBtn = document.getElementById('btn-quiz-skip-wait');
@@ -323,76 +404,79 @@
     var frontIsArab = KF.utils.hasArabic(qCard.front);
 
     container.innerHTML =
-      '<div class="max-w-2xl mx-auto space-y-5">' +
-        '<!-- Quiz Header -->' +
-        '<div class="flex flex-wrap items-center justify-between gap-3">' +
-          '<div>' +
-            '<button type="button" id="btn-quiz-exit" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mb-1">' +
-              '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />' +
+      '<div class="quiz-workspace">' +
+        '<!-- Focus Topbar -->' +
+        '<div class="focus-topbar">' +
+          '<div class="focus-topbar-left">' +
+            '<button type="button" id="btn-quiz-exit" class="btn btn-secondary btn-sm">' +
+              '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                '<polyline points="15 18 9 12 15 6"></polyline>' +
               '</svg>' +
-              'Keluar dari Kuis' +
+              'Keluar' +
             '</button>' +
-            '<h1 id="quiz-heading" dir="' + KF.utils.getTextDir(deck.title) + '" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white ' + KF.utils.getArabicClass(deck.title, false) + '">' +
-              'Kuis: ' + KF.utils.escapeHtml(deck.title) +
+            '<h1 id="quiz-heading" dir="' + KF.utils.getTextDir(deck.title) + '" class="focus-deck-title ' + KF.utils.getArabicClass(deck.title, false) + '">' +
+              KF.utils.escapeHtml(deck.title) +
             '</h1>' +
           '</div>' +
 
-          '<div class="flex items-center gap-2.5">' +
-            '<span class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200">' +
-              'Skor: ' + state.score +
-            '</span>' +
-            '<span id="quiz-timer-pill" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-extrabold bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">' +
-              '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />' +
-              '</svg>' +
-              '<span id="quiz-timer-text">' + QUESTION_SECONDS + 'd</span>' +
-            '</span>' +
+          '<div class="focus-topbar-right">' +
+            '<span class="status-pill status-pill-neutral font-mono">Skor ' + state.score + '</span>' +
+            '<button type="button" id="btn-quiz-toggle-timer" class="pill-toggle ' + (!state.timedMode ? 'is-active-primary' : '') + '" title="Ganti antara timer 15 detik atau mode santai tanpa batas waktu">' +
+              (state.timedMode ? 'Timer: 15d' : 'Mode Santai ✓') +
+            '</button>' +
           '</div>' +
         '</div>' +
 
-        '<!-- Question Counter & Timer Bar -->' +
-        '<div class="space-y-2">' +
-          '<div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">' +
-            '<span>Soal ' + (state.currentIndex + 1) + ' dari ' + totalQ + '</span>' +
-            '<span>' + progressPct + '% selesai</span>' +
-          '</div>' +
-          '<div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">' +
-            '<div id="quiz-timer-bar" class="h-full rounded-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-100" style="width: 100%"></div>' +
-          '</div>' +
+        '<!-- Separated Question Progress Bar -->' +
+        '<div class="quiz-progress-header">' +
+          '<span>Soal <strong class="font-mono">' + (state.currentIndex + 1) + '</strong> dari <strong class="font-mono">' + totalQ + '</strong></span>' +
+          '<span class="font-mono">' + progressPct + '%</span>' +
+        '</div>' +
+        '<div class="quiz-progress-track">' +
+          '<div class="quiz-progress-fill" style="width: ' + progressPct + '%"></div>' +
         '</div>' +
 
-        '<!-- Question Card -->' +
-        '<div class="rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-card dark:shadow-card-dark">' +
-          '<span class="inline-block text-[11px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-3">Pilih arti atau jawaban yang tepat</span>' +
-          '<div class="py-3">' +
-            '<p dir="' + KF.utils.getTextDir(qCard.front) + '" class="font-bold text-slate-900 dark:text-white break-words whitespace-pre-line ' +
-              (frontIsArab ? 'arabic-text text-3xl sm:text-4xl text-center' : 'text-xl sm:text-2xl') + '">' +
+        '<!-- Question Paper Card -->' +
+        '<div class="quiz-question-card">' +
+          '<div id="quiz-timer-strip" class="quiz-timer-strip ' + (state.timedMode ? '' : 'is-hidden') + '">' +
+            '<div id="quiz-timer-bar" class="quiz-timer-strip-fill" style="width: 100%"></div>' +
+          '</div>' +
+
+          '<div class="quiz-card-inner">' +
+            '<div class="quiz-card-meta">' +
+              '<span class="quiz-prompt-label">Pilih arti atau jawaban yang tepat</span>' +
+              '<span id="quiz-timer-pill" class="timer-pill">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                  '<circle cx="12" cy="12" r="9"></circle>' +
+                  '<polyline points="12 7 12 12 15 15"></polyline>' +
+                '</svg>' +
+                '<span id="quiz-timer-text">' + (state.timedMode ? QUESTION_SECONDS + 'd' : 'Santai') + '</span>' +
+              '</span>' +
+            '</div>' +
+
+            '<p dir="' + KF.utils.getTextDir(qCard.front) + '" class="quiz-prompt-text ' + (frontIsArab ? 'quiz-prompt-arab' : 'quiz-prompt-latin') + '">' +
               KF.utils.escapeHtml(qCard.front) +
             '</p>' +
-          '</div>' +
 
-          '<!-- 4 Multiple Choice Options -->' +
-          '<div id="quiz-options-list" class="mt-6 space-y-3">' +
-            state.currentOptions.map(function (opt, idx) {
-              var optIsArab = KF.utils.hasArabic(opt.text);
-              return (
-                '<button type="button" data-quiz-option="' + idx + '" class="quiz-option-btn w-full text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/70 dark:bg-slate-800/50 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/40 dark:hover:bg-indigo-500/10 text-slate-800 dark:text-slate-100 transition-all flex items-center justify-between gap-3 group">' +
-                  '<div class="flex items-center gap-3.5 min-w-0 flex-1">' +
-                    '<span class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 group-hover:border-indigo-300 dark:group-hover:border-indigo-500/50 flex items-center justify-center text-xs font-extrabold text-slate-600 dark:text-slate-300 shrink-0">' +
-                      letters[idx] +
+            '<div id="quiz-options-list" class="quiz-options-list">' +
+              state.currentOptions.map(function (opt, idx) {
+                var optIsArab = KF.utils.hasArabic(opt.text);
+                return (
+                  '<button type="button" data-quiz-option="' + idx + '" class="quiz-option">' +
+                    '<span class="quiz-option-main">' +
+                      '<span class="quiz-option-key">' + letters[idx] + '</span>' +
+                      '<span dir="' + KF.utils.getTextDir(opt.text) + '" class="quiz-option-text ' + (optIsArab ? 'arabic-inline' : '') + '">' +
+                        KF.utils.escapeHtml(opt.text) +
+                      '</span>' +
                     '</span>' +
-                    '<span dir="' + KF.utils.getTextDir(opt.text) + '" class="font-semibold text-sm sm:text-base break-words flex-1 ' + (optIsArab ? 'arabic-inline text-xl' : '') + '">' +
-                      KF.utils.escapeHtml(opt.text) +
-                    '</span>' +
-                  '</div>' +
-                  '<span class="opt-status-icon shrink-0"></span>' +
-                '</button>'
-              );
-            }).join('') +
-          '</div>' +
+                    '<span class="opt-status-icon"></span>' +
+                  '</button>'
+                );
+              }).join('') +
+            '</div>' +
 
-          '<div id="quiz-feedback-banner" class="hidden"></div>' +
+            '<div id="quiz-feedback-banner" class="is-hidden"></div>' +
+          '</div>' +
         '</div>' +
       '</div>';
 
@@ -402,6 +486,11 @@
         cleanup();
         KF.app.navigate('dashboard');
       });
+    }
+
+    var timerToggleBtn = document.getElementById('btn-quiz-toggle-timer');
+    if (timerToggleBtn) {
+      timerToggleBtn.addEventListener('click', toggleTimedMode);
     }
 
     var optsList = document.getElementById('quiz-options-list');
@@ -415,6 +504,21 @@
     }
   }
 
+  function countUnmasteredCorrect(deck) {
+    if (!deck || state.correctCardIds.length === 0) return 0;
+    var lookup = {};
+    for (var i = 0; i < state.correctCardIds.length; i++) {
+      lookup[state.correctCardIds[i]] = true;
+    }
+    var count = 0;
+    for (var j = 0; j < deck.cards.length; j++) {
+      if (lookup[deck.cards[j].id] && !deck.cards[j].mastered) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   function renderResults(deck) {
     cleanup();
     var container = document.getElementById('quiz-container');
@@ -423,109 +527,129 @@
     var total = state.questions.length;
     var accuracy = total > 0 ? Math.round((state.score / total) * 100) : 0;
     var wrongCount = state.wrongAnswers.length;
+    var unmasteredCorrectCount = countUnmasteredCorrect(deck);
 
-    var rating = { label: 'Terus Berlatih!', color: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-50 dark:bg-amber-500/15' };
+    var rating = { label: 'Terus Berlatih', badgeClass: 'status-pill-learning' };
     if (accuracy === 100) {
-      rating = { label: 'Sempurna!', color: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-50 dark:bg-emerald-500/15' };
+      rating = { label: 'Sempurna', badgeClass: 'status-pill-mastered' };
     } else if (accuracy >= 80) {
-      rating = { label: 'Luar Biasa!', color: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-50 dark:bg-emerald-500/15' };
+      rating = { label: 'Luar Biasa', badgeClass: 'status-pill-mastered' };
     } else if (accuracy >= 60) {
-      rating = { label: 'Bagus Sekali!', color: 'text-indigo-600 dark:text-indigo-400', badge: 'bg-indigo-50 dark:bg-indigo-500/15' };
+      rating = { label: 'Bagus Sekali', badgeClass: 'status-pill-neutral' };
     }
 
     var wrongListHtml = '';
     if (wrongCount === 0) {
       wrongListHtml =
-        '<div class="rounded-2xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-500/10 p-6 text-center">' +
-          '<p class="text-base font-bold text-emerald-800 dark:text-emerald-300">Tidak ada jawaban yang salah!</p>' +
-          '<p class="mt-1 text-sm text-emerald-700/80 dark:text-emerald-400">Anda menguasai seluruh pertanyaan dalam kuis ini dengan akurasi 100%.</p>' +
+        '<div class="editorial-notice-card" style="margin-top:0;max-width:none;padding:1.5rem;">' +
+          '<h3 class="notice-title" style="font-size:1.2rem;">Tidak ada jawaban salah</h3>' +
+          '<p class="notice-desc">Semua soal dalam sesi kuis ini dijawab dengan tepat (100%).</p>' +
         '</div>';
     } else {
       wrongListHtml =
-        '<div class="space-y-3">' +
+        '<div class="wrong-review-list">' +
           state.wrongAnswers.map(function (item, idx) {
             var qArab = KF.utils.getArabicClass(item.front, false);
             var corrArab = KF.utils.getArabicClass(item.correctAnswer, false);
             var userArab = item.userAnswer ? KF.utils.getArabicClass(item.userAnswer, false) : '';
 
             return (
-              '<div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm">' +
-                '<div class="flex items-start justify-between gap-3">' +
-                  '<span class="text-xs font-bold text-slate-400">Soal #' + (idx + 1) + '</span>' +
-                  '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400">' +
+              '<article class="wrong-review-item">' +
+                '<div class="wrong-review-top">' +
+                  '<span class="font-mono" style="color:var(--ink-tertiary);">Soal #' + (idx + 1) + '</span>' +
+                  '<span class="status-pill status-pill-learning">' +
                     (item.timedOut ? 'Waktu Habis' : 'Salah') +
                   '</span>' +
                 '</div>' +
 
-                '<p dir="' + KF.utils.getTextDir(item.front) + '" class="mt-2 text-base sm:text-lg font-bold text-slate-900 dark:text-white break-words ' + (qArab ? qArab + ' text-2xl' : '') + '">' +
+                '<p dir="' + KF.utils.getTextDir(item.front) + '" class="wrong-review-q ' + qArab + '">' +
                   KF.utils.escapeHtml(item.front) +
                 '</p>' +
 
-                '<div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm">' +
-                  '<div class="rounded-xl bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200/70 dark:border-rose-500/20 px-3.5 py-2.5">' +
-                    '<span class="block text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">Jawaban Kamu</span>' +
-                    '<span dir="' + (item.userAnswer ? KF.utils.getTextDir(item.userAnswer) : 'ltr') + '" class="mt-0.5 block font-semibold text-rose-900 dark:text-rose-200 break-words ' + userArab + '">' +
+                '<div class="wrong-compare-grid">' +
+                  '<div class="compare-box compare-box-wrong">' +
+                    '<span class="compare-box-label">Jawaban Kamu</span>' +
+                    '<span dir="' + (item.userAnswer ? KF.utils.getTextDir(item.userAnswer) : 'ltr') + '" class="' + userArab + '">' +
                       (item.timedOut ? 'Tidak dijawab (Waktu Habis)' : KF.utils.escapeHtml(item.userAnswer)) +
                     '</span>' +
                   '</div>' +
 
-                  '<div class="rounded-xl bg-emerald-50/80 dark:bg-emerald-500/10 border border-emerald-200/70 dark:border-emerald-500/20 px-3.5 py-2.5">' +
-                    '<span class="block text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Jawaban Benar</span>' +
-                    '<span dir="' + KF.utils.getTextDir(item.correctAnswer) + '" class="mt-0.5 block font-semibold text-emerald-900 dark:text-emerald-200 break-words ' + corrArab + '">' +
+                  '<div class="compare-box compare-box-correct">' +
+                    '<span class="compare-box-label">Jawaban Benar</span>' +
+                    '<span dir="' + KF.utils.getTextDir(item.correctAnswer) + '" class="' + corrArab + '">' +
                       KF.utils.escapeHtml(item.correctAnswer) +
                     '</span>' +
                   '</div>' +
                 '</div>' +
-              '</div>'
+              '</article>'
             );
           }).join('') +
         '</div>';
     }
 
     container.innerHTML =
-      '<div class="max-w-3xl mx-auto space-y-6">' +
-        '<!-- Result Summary Card -->' +
-        '<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 text-center shadow-card dark:shadow-card-dark">' +
-          '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-extrabold ' + rating.badge + ' ' + rating.color + '">' +
-            rating.label +
-          '</span>' +
-          '<h1 id="quiz-heading" class="mt-3 text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">' +
+      '<div class="quiz-results-wrap">' +
+        '<div class="editorial-notice-card" style="max-width:none;margin-top:0;">' +
+          '<span class="status-pill ' + rating.badgeClass + '">' + rating.label + '</span>' +
+          '<h1 id="quiz-heading" class="notice-title" style="margin-top:0.75rem;">' +
             'Hasil Kuis: ' + KF.utils.escapeHtml(deck.title) +
           '</h1>' +
 
-          '<div class="mt-6 grid grid-cols-3 gap-3 sm:gap-4 max-w-lg mx-auto">' +
-            '<div class="rounded-2xl bg-slate-50 dark:bg-slate-800/70 p-4 border border-slate-100 dark:border-slate-800">' +
-              '<p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Skor</p>' +
-              '<p class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">' + state.score + '/' + total + '</p>' +
+          '<div class="quiz-score-grid">' +
+            '<div class="quiz-score-tile">' +
+              '<p class="quiz-score-label">Total Skor</p>' +
+              '<p class="quiz-score-val">' + state.score + '/' + total + '</p>' +
             '</div>' +
-            '<div class="rounded-2xl bg-indigo-50/70 dark:bg-indigo-500/10 p-4 border border-indigo-100 dark:border-indigo-500/20">' +
-              '<p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Akurasi</p>' +
-              '<p class="text-2xl sm:text-3xl font-extrabold text-indigo-700 dark:text-indigo-300 mt-1">' + accuracy + '%</p>' +
+            '<div class="quiz-score-tile">' +
+              '<p class="quiz-score-label">Akurasi</p>' +
+              '<p class="quiz-score-val">' + accuracy + '%</p>' +
             '</div>' +
-            '<div class="rounded-2xl bg-rose-50/70 dark:bg-rose-500/10 p-4 border border-rose-100 dark:border-rose-500/20">' +
-              '<p class="text-xs font-semibold text-rose-600 dark:text-rose-400">Salah</p>' +
-              '<p class="text-2xl sm:text-3xl font-extrabold text-rose-700 dark:text-rose-300 mt-1">' + wrongCount + '</p>' +
+            '<div class="quiz-score-tile">' +
+              '<p class="quiz-score-label">Salah</p>' +
+              '<p class="quiz-score-val">' + wrongCount + '</p>' +
             '</div>' +
           '</div>' +
 
-          '<div class="mt-6 flex flex-wrap items-center justify-center gap-3">' +
-            '<button type="button" id="btn-quiz-retry" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm shadow-indigo-500/25 transition-colors">Ulangi Kuis</button>' +
-            '<button type="button" id="btn-quiz-flashcard" class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors">Belajar Flashcard</button>' +
-            '<button type="button" id="btn-quiz-dashboard" class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 transition-colors">Kembali ke Dashboard</button>' +
+          '<div class="notice-actions">' +
+            (wrongCount > 0
+              ? '<button type="button" id="btn-quiz-retry-wrong" class="btn btn-warm">Ulangi Soal yang Salah (' + wrongCount + ')</button>'
+              : '') +
+            '<button type="button" id="btn-quiz-retry" class="btn btn-primary">Ulangi Semua Soal</button>' +
+            (unmasteredCorrectCount > 0
+              ? '<button type="button" id="btn-quiz-sync-mastery" class="btn btn-secondary">Tandai ' + unmasteredCorrectCount + ' Benar sebagai Hafal</button>'
+              : '') +
+            '<button type="button" id="btn-quiz-flashcard" class="btn btn-secondary">Buka Flashcard</button>' +
+            '<button type="button" id="btn-quiz-dashboard" class="btn btn-ghost">Kembali ke Meja</button>' +
           '</div>' +
         '</div>' +
 
-        '<!-- Wrong Answers Review Section -->' +
-        '<section aria-label="Review jawaban salah" class="space-y-3">' +
-          '<h2 class="text-lg font-extrabold text-slate-900 dark:text-white">' +
-            'Review Soal yang Dijawab Salah (' + wrongCount + ')' +
-          '</h2>' +
+        '<section aria-label="Review jawaban salah" class="wrong-review-section">' +
+          '<h2>Ulasan Soal yang Salah (' + wrongCount + ')</h2>' +
           wrongListHtml +
         '</section>' +
       '</div>';
 
+    var retryWrongBtn = document.getElementById('btn-quiz-retry-wrong');
+    if (retryWrongBtn) {
+      retryWrongBtn.addEventListener('click', function () {
+        var freshDeck = KF.storage.getDeckById(state.deckId);
+        if (!freshDeck) return;
+        beginSession(freshDeck, state.wrongCards.slice());
+      });
+    }
+
     var retryBtn = document.getElementById('btn-quiz-retry');
     if (retryBtn) retryBtn.addEventListener('click', function () { start(state.deckId); });
+
+    var syncBtn = document.getElementById('btn-quiz-sync-mastery');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', function () {
+        var updatedCount = KF.storage.markCardsMastered(state.deckId, state.correctCardIds, true);
+        syncBtn.disabled = true;
+        syncBtn.textContent = 'Sudah Ditandai Hafal ✓';
+        KF.utils.showToast(updatedCount + ' kartu ditandai Sudah Hafal.', 'success');
+      });
+    }
 
     var fcBtn = document.getElementById('btn-quiz-flashcard');
     if (fcBtn) fcBtn.addEventListener('click', function () { KF.app.navigate('flashcard', state.deckId); });

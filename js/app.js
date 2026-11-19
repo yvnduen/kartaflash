@@ -1,11 +1,12 @@
 /**
- * KartaFlash - Main Application Controller & Router
+ * KartaFlash - Main Application Controller & Hash Router
  */
 (function (global) {
   'use strict';
 
   var KF = (global.KartaFlash = global.KartaFlash || {});
   var currentView = 'dashboard';
+  var currentDeckId = null;
 
   function updateThemeUi() {
     var isDark = document.documentElement.classList.contains('dark');
@@ -28,8 +29,7 @@
     if (!crumbWrap || !crumbText) return;
 
     if (view === 'dashboard') {
-      crumbWrap.classList.add('hidden');
-      crumbWrap.classList.remove('flex');
+      crumbWrap.classList.add('is-hidden');
       return;
     }
 
@@ -41,29 +41,68 @@
     var deck = deckId ? KF.storage.getDeckById(deckId) : null;
     var prefix = labels[view] || '';
     crumbText.textContent = deck ? prefix + ': ' + deck.title : prefix;
-    crumbWrap.classList.remove('hidden');
-    crumbWrap.classList.add('flex');
+    crumbWrap.classList.remove('is-hidden');
   }
 
-  function navigate(view, deckId) {
+  function syncUrlHash(view, deckId) {
+    if (!global.location) return;
+    var targetHash = view === 'dashboard'
+      ? '#dashboard'
+      : '#' + view + (deckId ? '/' + encodeURIComponent(deckId) : '');
+
+    if (global.location.hash !== targetHash) {
+      if (global.history && global.history.pushState) {
+        global.history.pushState(null, '', targetHash);
+      } else {
+        global.location.hash = targetHash;
+      }
+    }
+  }
+
+  function parseHashRoute() {
+    var raw = (global.location && global.location.hash) ? global.location.hash.replace(/^#/, '') : '';
+    if (!raw) return { view: 'dashboard', deckId: null };
+
+    var parts = raw.split('/');
+    var view = parts[0];
+    var deckId = parts[1] ? decodeURIComponent(parts[1]) : null;
+
+    if (view !== 'dashboard' && view !== 'manage' && view !== 'flashcard' && view !== 'quiz') {
+      return { view: 'dashboard', deckId: null };
+    }
+    if (view !== 'dashboard' && (!deckId || !KF.storage.getDeckById(deckId))) {
+      return { view: 'dashboard', deckId: null };
+    }
+    return { view: view, deckId: deckId };
+  }
+
+  function navigate(view, deckId, skipHashSync) {
     if (currentView === 'quiz' && view !== 'quiz') {
       KF.quiz.cleanup();
     }
 
+    if (KF.dashboard && KF.dashboard.closeAllDeckMenus) {
+      KF.dashboard.closeAllDeckMenus();
+    }
+
     currentView = view;
+    currentDeckId = deckId || null;
+
+    var isFocusMode = view === 'flashcard' || view === 'quiz';
+    document.body.classList.toggle('focus-mode', isFocusMode);
 
     var views = ['dashboard', 'manage', 'flashcard', 'quiz'];
     for (var i = 0; i < views.length; i++) {
       var el = document.getElementById('view-' + views[i]);
       if (!el) continue;
-      if (views[i] === view) {
-        el.classList.remove('hidden');
-      } else {
-        el.classList.add('hidden');
-      }
+      el.classList.toggle('is-hidden', views[i] !== view);
     }
 
     updateBreadcrumb(view, deckId);
+
+    if (!skipHashSync) {
+      syncUrlHash(view, deckId);
+    }
 
     if (view === 'dashboard') {
       KF.dashboard.render();
@@ -93,6 +132,13 @@
       themeBtn.addEventListener('click', toggleTheme);
     }
 
+    var dataModalBtn = document.getElementById('btn-data-modal');
+    if (dataModalBtn) {
+      dataModalBtn.addEventListener('click', function () {
+        KF.utils.openModal('modal-data');
+      });
+    }
+
     var shortcutsBtn = document.getElementById('btn-shortcuts');
     if (shortcutsBtn) {
       shortcutsBtn.addEventListener('click', function () {
@@ -103,6 +149,7 @@
     var resetSamplesBtn = document.getElementById('btn-reset-samples');
     if (resetSamplesBtn) {
       resetSamplesBtn.addEventListener('click', function () {
+        KF.utils.closeModal('modal-data');
         KF.utils.confirmAction({
           title: 'Muat Ulang Deck Contoh?',
           message: 'Tindakan ini akan mengganti seluruh daftar deck saat ini dengan 3 deck contoh bawaan.',
@@ -112,7 +159,7 @@
           if (!ok) return;
           KF.storage.resetToDefaultDecks();
           navigate('dashboard');
-          KF.utils.showToast('Deck contoh bawaan berhasil dimuat ulang.', 'success');
+          KF.utils.showToast('Deck contoh bawaan dimuat ulang.', 'success');
         });
       });
     }
@@ -126,7 +173,7 @@
       });
     }
 
-    var closableModals = ['modal-deck', 'modal-card', 'modal-shortcuts'];
+    var closableModals = ['modal-deck', 'modal-card', 'modal-shortcuts', 'modal-data'];
     for (var j = 0; j < closableModals.length; j++) {
       (function (mId) {
         var modalEl = document.getElementById(mId);
@@ -139,14 +186,26 @@
       })(closableModals[j]);
     }
 
+    // Hash routing synchronization (browser Back/Forward)
+    global.addEventListener('hashchange', function () {
+      var parsed = parseHashRoute();
+      if (parsed.view !== currentView || parsed.deckId !== currentDeckId) {
+        navigate(parsed.view, parsed.deckId, true);
+      }
+    });
+
     // Global Keyboard Shortcuts
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
+        if (KF.dashboard && KF.dashboard.closeAllDeckMenus) {
+          KF.dashboard.closeAllDeckMenus();
+        }
         if (KF.utils.isAnyModalOpen()) {
           KF.utils.resolvePendingConfirm(false);
           KF.utils.closeModal('modal-deck');
           KF.utils.closeModal('modal-card');
           KF.utils.closeModal('modal-shortcuts');
+          KF.utils.closeModal('modal-data');
         }
         return;
       }
@@ -185,7 +244,9 @@
     KF.dashboard.bindEvents();
     KF.manage.bindEvents();
     bindGlobalUi();
-    navigate('dashboard');
+
+    var initial = parseHashRoute();
+    navigate(initial.view, initial.deckId, true);
   }
 
   KF.app = {
