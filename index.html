@@ -26,6 +26,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/styles.css" />
+  <link id="vite-hero-css" rel="stylesheet" href="assets/hero-bundle.css" />
 </head>
 <body>
 
@@ -84,6 +85,9 @@
       </nav>
     </div>
   </header>
+
+  <!-- Liquid Metal Hero Section (React + shadcn/ui) -->
+  <div id="liquid-metal-hero-root"></div>
 
   <!-- Main Workspace -->
   <main id="app-main" class="app-main container">
@@ -416,5 +420,6 @@
   <script defer src="js/flashcard.js"></script>
   <script defer src="js/quiz.js"></script>
   <script defer src="js/app.js"></script>
+  <script id="vite-hero-js" type="module" src="assets/hero-bundle.js"></script>
 </body>
 </html>

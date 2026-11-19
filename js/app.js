@@ -91,6 +91,11 @@
     var isFocusMode = view === 'flashcard' || view === 'quiz';
     document.body.classList.toggle('focus-mode', isFocusMode);
 
+    var heroRoot = document.getElementById('liquid-metal-hero-root');
+    if (heroRoot) {
+      heroRoot.classList.toggle('is-hidden', view !== 'dashboard');
+    }
+
     var views = ['dashboard', 'manage', 'flashcard', 'quiz'];
     for (var i = 0; i < views.length; i++) {
       var el = document.getElementById('view-' + views[i]);

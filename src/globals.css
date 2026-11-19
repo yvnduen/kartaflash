@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 38 38% 93%;
+    --foreground: 33 17% 10%;
+
+    --card: 42 63% 97%;
+    --card-foreground: 33 17% 10%;
+
+    --popover: 42 63% 97%;
+    --popover-foreground: 33 17% 10%;
+
+    --primary: 163 44% 21%;
+    --primary-foreground: 42 63% 97%;
+
+    --secondary: 39 36% 87%;
+    --secondary-foreground: 33 17% 10%;
+
+    --muted: 39 36% 87%;
+    --muted-foreground: 36 12% 32%;
+
+    --accent: 163 44% 21%;
+    --accent-foreground: 42 63% 97%;
+
+    --destructive: 4 56% 44%;
+    --destructive-foreground: 42 63% 97%;
+
+    --border: 39 31% 83%;
+    --input: 39 31% 83%;
+    --ring: 163 44% 21%;
+
+    --radius: 0.65rem;
+  }
+
+  html.dark {
+    --background: 36 13% 8%;
+    --foreground: 39 35% 89%;
+
+    --card: 34 13% 10%;
+    --card-foreground: 39 35% 89%;
+
+    --popover: 34 13% 10%;
+    --popover-foreground: 39 35% 89%;
+
+    --primary: 159 26% 54%;
+    --primary-foreground: 154 16% 9%;
+
+    --secondary: 36 15% 14%;
+    --secondary-foreground: 39 35% 89%;
+
+    --muted: 36 15% 14%;
+    --muted-foreground: 35 15% 62%;
+
+    --accent: 159 26% 54%;
+    --accent-foreground: 154 16% 9%;
+
+    --destructive: 4 64% 65%;
+    --destructive-foreground: 36 13% 8%;
+
+    --border: 34 16% 17%;
+    --input: 34 16% 17%;
+    --ring: 159 26% 54%;
+  }
+
+  #liquid-metal-hero-root *,
+  #liquid-metal-hero-root ::before,
+  #liquid-metal-hero-root ::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: hsl(var(--border));
+  }
+
+  #liquid-metal-hero-root h1,
+  #liquid-metal-hero-root h2,
+  #liquid-metal-hero-root h3,
+  #liquid-metal-hero-root p {
+    margin: 0;
+  }
+
+  html {
+    background-color: var(--bg-desk);
+    transition: background-color 0.2s ease;
+  }
+
+  body {
+    background-color: transparent !important;
+  }
+
+  #liquid-metal-hero-root {
+    position: static !important;
+    z-index: auto !important;
+  }
+}
+
+/* High-contrast glass theme tokens harmonized for both Mode Terang & Mode Gelap */
+:root,
+html.dark {
+  --ink-primary: #FAF7F2;
+  --ink-secondary: #DED6CA;
+  --ink-tertiary: #B8AFA2;
+
+  --bg-paper: rgba(20, 18, 16, 0.62);
+  --bg-paper-elevated: rgba(24, 22, 19, 0.66);
+  --bg-paper-back: rgba(28, 25, 22, 0.72);
+  --bg-paper-sunken: rgba(255, 255, 255, 0.08);
+
+  --border-hairline: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.26);
+
+  --accent-primary: #45B091;
+  --accent-primary-hover: #58C2A3;
+  --accent-primary-soft: rgba(69, 176, 145, 0.2);
+  --accent-primary-ink: #98EBD2;
+  --on-accent: #0D1714;
+
+  --accent-warm: #E79B7A;
+  --accent-warm-soft: rgba(231, 155, 122, 0.18);
+  --accent-warm-ink: #F7BE9F;
+
+  --accent-success: #6BB38E;
+  --accent-success-soft: rgba(107, 179, 142, 0.18);
+  --accent-success-ink: #9AD4B6;
+
+  --accent-danger: #E47D75;
+  --accent-danger-hover: #F0918A;
+  --accent-danger-soft: rgba(228, 125, 117, 0.18);
+  --accent-danger-ink: #F7B5B0;
+}
+
+.deck-theme-emerald {
+  --deck-accent: #6AA892;
+  --deck-accent-soft: rgba(106, 168, 146, 0.2);
+  --deck-accent-ink: #9AD0BC;
+}
+
+.deck-theme-indigo {
+  --deck-accent: #7D9FD1;
+  --deck-accent-soft: rgba(125, 159, 209, 0.2);
+  --deck-accent-ink: #A9C2E6;
+}
+
+.deck-theme-sky {
+  --deck-accent: #6EB0BC;
+  --deck-accent-soft: rgba(110, 176, 188, 0.2);
+  --deck-accent-ink: #9CD0DA;
+}
+
+.deck-theme-amber {
+  --deck-accent: #D7A154;
+  --deck-accent-soft: rgba(215, 161, 84, 0.2);
+  --deck-accent-ink: #EAC285;
+}
+
+.deck-theme-rose {
+  --deck-accent: #DE8673;
+  --deck-accent-soft: rgba(222, 134, 115, 0.2);
+  --deck-accent-ink: #EFAEA0;
+}
+
+.deck-theme-violet {
+  --deck-accent: #BC8DB6;
+  --deck-accent-soft: rgba(188, 141, 182, 0.2);
+  --deck-accent-ink: #D8B5D3;
+}
+
+.btn-deck-primary {
+  color: #14120F !important;
+}
+
+/* Semi-transparent dark frosted glass surfaces over LiquidMetal background */
+.deck-card,
+.continue-strip,
+.empty-state,
+.card-row,
+.manage-card-panel,
+.modal-box,
+.deck-menu-popover {
+  background-color: rgba(18, 16, 15, 0.64) !important;
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+}
+
+.deck-card:hover {
+  background-color: rgba(24, 21, 19, 0.74) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.deck-card-footer {
+  background-color: rgba(10, 9, 8, 0.34) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.input-search,
+.select-input,
+.text-input,
+.summary-progress-pill,
+.btn-deck-outline,
+.btn-secondary {
+  background-color: rgba(16, 14, 12, 0.58) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #FAF7F2 !important;
+}
+
+.input-search::placeholder,
+.text-input::placeholder {
+  color: #B8AFA2 !important;
+}
+
+.select-input option {
+  background-color: #1A1714;
+  color: #FAF7F2;
+}
+
+.site-header,
+.site-footer {
+  background-color: rgba(16, 14, 12, 0.62) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.progress-track {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.page-title,
+.page-subtitle,
+.eyebrow-label,
+.editorial-summary-bar,
+.toolbar-count {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+}
