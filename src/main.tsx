@@ -34,7 +34,7 @@ if (heroRootEl) {
   createRoot(heroRootEl).render(
     <StrictMode>
       <LiquidMetalHero
-        badge="✨ KartaFlash · Meja Belajar Interaktif"
+        badge="✨ KartaFlash v2 · Liquid Glass Edition"
         title="Hafalan Lebih Cepat & Fokus"
         subtitle="Kuasai kosakata bahasa Arab, istilah teknis, dan catatan belajar lewat kartu 3D bolak-balik serta kuis pilihan ganda adaptif yang bekerja 100% offline di perambanmu."
         primaryCtaLabel="Mulai Belajar Sekarang"

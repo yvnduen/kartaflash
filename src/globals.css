@@ -99,6 +99,7 @@
 /* High-contrast glass theme tokens harmonized for both Mode Terang & Mode Gelap */
 :root,
 html.dark {
+  --bg-desk: #141210;
   --ink-primary: #FAF7F2;
   --ink-secondary: #DED6CA;
   --ink-tertiary: #B8AFA2;
