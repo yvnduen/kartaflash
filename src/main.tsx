@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './globals.css';
-import LiquidMetalHero from '@/components/ui/liquid-metal-hero';
+import LiquidMetalHero, { LiquidMetalBackground } from '@/components/ui/liquid-metal-hero';
 
 interface KartaFlashGlobal {
   dashboard?: {
@@ -29,11 +29,21 @@ function handleCreateNewDeck() {
 }
 
 const heroRootEl = document.getElementById('liquid-metal-hero-root');
+const bgRootEl = document.getElementById('liquid-metal-bg-root');
+
+if (bgRootEl) {
+  createRoot(bgRootEl).render(
+    <StrictMode>
+      <LiquidMetalBackground />
+    </StrictMode>
+  );
+}
 
 if (heroRootEl) {
   createRoot(heroRootEl).render(
     <StrictMode>
       <LiquidMetalHero
+        withBackground={!bgRootEl}
         badge="✨ KartaFlash v2 · Liquid Glass Edition"
         title="Hafalan Lebih Cepat & Fokus"
         subtitle="Kuasai kosakata bahasa Arab, istilah teknis, dan catatan belajar lewat kartu 3D bolak-balik serta kuis pilihan ganda adaptif yang bekerja 100% offline di perambanmu."

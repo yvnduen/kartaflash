@@ -454,7 +454,8 @@
               '</span>' +
             '</div>' +
 
-            '<p dir="' + KF.utils.getTextDir(qCard.front) + '" class="quiz-prompt-text ' + (frontIsArab ? 'quiz-prompt-arab' : 'quiz-prompt-latin') + '">' +
+            '<div class="quiz-tts-row">' + KF.utils.ttsButtonHtml('quiz-prompt-text', null) + '</div>' +
+            '<p id="quiz-prompt-text" dir="' + KF.utils.getTextDir(qCard.front) + '" class="quiz-prompt-text ' + (frontIsArab ? 'quiz-prompt-arab' : 'quiz-prompt-latin') + '">' +
               KF.utils.escapeHtml(qCard.front) +
             '</p>' +
 

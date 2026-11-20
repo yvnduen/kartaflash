@@ -292,7 +292,76 @@
     }
   }
 
+  // ---- Pronunciation (Web Speech API) ----
+  var ID_HINT_WORDS = {
+    yang: 1, dan: 1, untuk: 1, dengan: 1, di: 1, ke: 1, ini: 1, itu: 1, atau: 1,
+    dari: 1, adalah: 1, pada: 1, dalam: 1, secara: 1, agar: 1, sebagai: 1, tidak: 1,
+    akan: 1, juga: 1, bisa: 1, oleh: 1, saat: 1, setelah: 1, sudah: 1, belum: 1,
+    proses: 1, kemampuan: 1, batas: 1, waktu: 1, selamat: 1, terima: 1, kasih: 1,
+    buku: 1, sekolah: 1, rumah: 1, matahari: 1, bulan: 1, ilmu: 1, pengetahuan: 1
+  };
+
+  function detectSpeechLang(text, otherText) {
+    if (hasArabic(text)) return 'ar-SA';
+    if (hasArabic(otherText)) return 'id-ID';
+    var words = String(text || '').toLowerCase().match(/[a-z]+/g) || [];
+    for (var i = 0; i < words.length; i++) {
+      if (ID_HINT_WORDS[words[i]]) return 'id-ID';
+    }
+    return 'en-US';
+  }
+
+  function speak(text, otherText) {
+    var clean = String(text || '').trim();
+    if (!clean) return;
+
+    if (!global.speechSynthesis || typeof global.SpeechSynthesisUtterance === 'undefined') {
+      showToast('Browser ini belum mendukung suara pelafalan.', 'warning');
+      return;
+    }
+
+    var lang = detectSpeechLang(clean, otherText);
+    var synth = global.speechSynthesis;
+    synth.cancel();
+
+    var utterance = new global.SpeechSynthesisUtterance(clean);
+    utterance.lang = lang;
+    utterance.rate = lang === 'ar-SA' ? 0.85 : 0.95;
+
+    var voices = synth.getVoices ? synth.getVoices() : [];
+    var prefix = lang.slice(0, 2);
+    var matched = voices.filter(function (v) {
+      return v.lang && v.lang.toLowerCase().indexOf(prefix) === 0;
+    });
+
+    if (matched.length > 0) {
+      utterance.voice = matched[0];
+    } else if (voices.length > 0) {
+      showToast('Suara untuk bahasa ini belum terpasang di perangkatmu, hasilnya mungkin tidak terdengar.', 'warning');
+    }
+
+    synth.speak(utterance);
+  }
+
+  function ttsButtonHtml(targetId, otherId) {
+    return (
+      '<button type="button" class="tts-btn" data-tts-target="' + escapeHtml(targetId) + '"' +
+        (otherId ? ' data-tts-other="' + escapeHtml(otherId) + '"' : '') +
+        ' title="Dengarkan pelafalan" aria-label="Dengarkan pelafalan">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>' +
+          '<path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>' +
+          '<path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>' +
+        '</svg>' +
+        'Dengarkan' +
+      '</button>'
+    );
+  }
+
   KF.utils = {
+    speak: speak,
+    detectSpeechLang: detectSpeechLang,
+    ttsButtonHtml: ttsButtonHtml,
     generateId: generateId,
     escapeHtml: escapeHtml,
     hasArabic: hasArabic,

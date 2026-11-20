@@ -5,6 +5,56 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+
+/**
+ * Full-screen animated liquid metal backdrop. It is rendered separately from the hero
+ * content so it can stay alive behind every view (Dashboard, Kelola Kartu, Flashcard, Kuis).
+ * The shader palette follows the theme toggle: bright chrome (light) vs dark noir (dark).
+ */
+export function LiquidMetalBackground() {
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  );
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => setIsDark(root.classList.contains('dark'));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const basePreset = liquidMetalPresets[2].params;
+  const shaderParams = {
+    ...basePreset,
+    ...(isDark ? { colorBack: '#101013', colorTint: '#5b5b68' } : {}),
+    ...(prefersReducedMotion ? { speed: 0 } : {}),
+  };
+
+  return (
+    <>
+      <LiquidMetal
+        {...shaderParams}
+        style={{ position: "fixed", inset: 0, zIndex: -20 }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 -z-10 bg-slate-950/30 dark:bg-black/30"
+      />
+      <div
+        aria-hidden="true"
+        className="lm-focus-dim pointer-events-none fixed inset-0 -z-10 bg-black/40 opacity-0 transition-opacity duration-500"
+      />
+    </>
+  );
+}
 
 interface LiquidMetalHeroProps {
   badge?: string;
@@ -15,6 +65,7 @@ interface LiquidMetalHeroProps {
   onPrimaryCtaClick: () => void;
   onSecondaryCtaClick?: () => void;
   features?: string[];
+  withBackground?: boolean;
 }
 
 export default function LiquidMetalHero({
@@ -26,6 +77,7 @@ export default function LiquidMetalHero({
   onPrimaryCtaClick,
   onSecondaryCtaClick,
   features = [],
+  withBackground = true,
 }: LiquidMetalHeroProps) {
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -55,15 +107,8 @@ export default function LiquidMetalHero({
   };
 
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center py-16">
-      <LiquidMetal
-        {...(liquidMetalPresets[2]?.params ?? liquidMetalPresets[2])}
-        style={{ position: "fixed", inset: 0, zIndex: -20 }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 -z-10 bg-slate-950/35 dark:bg-black/[0.62]"
-      />
+    <section className="relative min-h-[60vh] flex items-center justify-center py-14">
+      {withBackground && <LiquidMetalBackground />}
       
       <div className="relative z-10 container mx-auto px-6 lg:px-8 max-w-7xl">
         <motion.div 

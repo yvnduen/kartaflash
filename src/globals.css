@@ -90,7 +90,8 @@
     background-color: transparent !important;
   }
 
-  #liquid-metal-hero-root {
+  #liquid-metal-hero-root,
+  #liquid-metal-bg-root {
     position: static !important;
     z-index: auto !important;
   }
@@ -238,4 +239,84 @@ html.dark {
 .editorial-summary-bar,
 .toolbar-count {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+}
+
+/* ==========================================================================
+   Persistent LiquidMetal background: extra dimming in Focus Mode (Flashcard & Kuis)
+   ========================================================================== */
+body.focus-mode .lm-focus-dim {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Dark frosted glass for the remaining surfaces (Flashcard, Kuis, Kelola Kartu)
+   ========================================================================== */
+.quiz-question-card,
+.author-panel,
+.editorial-notice-card,
+.wrong-review-item,
+.pill-toggle,
+.segmented-tabs {
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+/* 3D flip faces: kept near-opaque and without backdrop-filter (blur breaks inside preserve-3d) */
+.flip-card-face {
+  background-color: rgba(20, 18, 16, 0.84);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.flip-card-back {
+  background-color: rgba(27, 24, 21, 0.9);
+}
+
+.flashcard-stack.has-stack::before,
+.flashcard-stack.has-stack::after {
+  background-color: rgba(20, 18, 16, 0.6);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ==========================================================================
+   Contrast fixes
+   ========================================================================== */
+.btn-danger {
+  color: #14120F !important;
+}
+
+.toast-item {
+  background-color: rgba(20, 18, 16, 0.92);
+  color: #FAF7F2;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* ==========================================================================
+   Pronunciation (TTS) button
+   ========================================================================== */
+.tts-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-hairline);
+  background-color: var(--bg-paper-sunken);
+  color: var(--ink-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.tts-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary-ink);
+  background-color: var(--accent-primary-soft);
+}
+
+.quiz-tts-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
 }

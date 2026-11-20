@@ -12,7 +12,7 @@
     var isDark = document.documentElement.classList.contains('dark');
     var label = document.getElementById('theme-label');
     if (label) {
-      label.textContent = isDark ? 'Mode Terang' : 'Mode Gelap';
+      label.textContent = isDark ? 'Latar Metalik' : 'Latar Noir';
     }
   }
 
@@ -190,6 +190,17 @@
         });
       })(closableModals[j]);
     }
+
+    // Pronunciation (TTS) buttons rendered by Flashcard & Quiz views
+    document.addEventListener('click', function (e) {
+      var ttsBtn = e.target && e.target.closest ? e.target.closest('[data-tts-target]') : null;
+      if (!ttsBtn) return;
+      e.preventDefault();
+      var targetEl = document.getElementById(ttsBtn.getAttribute('data-tts-target'));
+      var otherId = ttsBtn.getAttribute('data-tts-other');
+      var otherEl = otherId ? document.getElementById(otherId) : null;
+      KF.utils.speak(targetEl ? targetEl.textContent : '', otherEl ? otherEl.textContent : '');
+    });
 
     // Hash routing synchronization (browser Back/Forward)
     global.addEventListener('hashchange', function () {

@@ -498,6 +498,7 @@
                 '</div>' +
 
                 '<div class="fc-face-footer">' +
+                  KF.utils.ttsButtonHtml('fc-front-text', 'fc-back-text') +
                   '<span>Ketuk kartu atau tekan <kbd class="kbd-badge">Spasi</kbd> untuk balik</span>' +
                 '</div>' +
               '</div>' +
@@ -519,6 +520,7 @@
                 '</div>' +
 
                 '<div class="fc-face-footer">' +
+                  KF.utils.ttsButtonHtml('fc-back-text', 'fc-front-text') +
                   '<span>Nilai ingatanmu di bawah, atau tekan <kbd class="kbd-badge">1</kbd> / <kbd class="kbd-badge">2</kbd></span>' +
                 '</div>' +
               '</div>' +
@@ -666,7 +668,8 @@
         }
       }, { passive: true });
 
-      stage.addEventListener('click', function () {
+      stage.addEventListener('click', function (e) {
+        if (e && e.target && e.target.closest && e.target.closest('[data-tts-target]')) return;
         if (state.ignoreNextStageClick) {
           state.ignoreNextStageClick = false;
           return;
